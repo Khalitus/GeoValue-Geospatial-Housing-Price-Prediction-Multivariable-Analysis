@@ -60,11 +60,21 @@ def test_prediction_uses_fitted_pipeline(tmp_path, monkeypatch, synthetic_housin
     web._cached_pipeline.cache_clear()
 
 
-def test_provided_training_report_is_readable():
+def test_prepared_training_report_and_missing_report(tmp_path, monkeypatch):
+    deploy = tmp_path / "deploy"
+    deploy.mkdir()
+    report = {"selected_model": "xgboost", "held_out_test": {"r2": 0.84347}}
+    (deploy / "training-report.json").write_text(json.dumps(report), encoding="utf-8")
+    monkeypatch.setattr(web, "DEPLOY", deploy)
+    monkeypatch.setattr(web, "PUBLIC", tmp_path / "public")
+    monkeypatch.setattr(web, "ROOT", tmp_path)
+
     response = CLIENT.get("/api/report")
     assert response.status_code == 200
-    assert response.json()["selected_model"] == "xgboost"
-    assert response.json()["held_out_test"]["r2"] > 0.8
+    assert response.json() == report
+
+    (deploy / "training-report.json").unlink()
+    assert CLIENT.get("/api/report").status_code == 503
 
 
 def test_gradient_query_uses_smooth_surface_only(tmp_path, monkeypatch):
@@ -79,6 +89,7 @@ def test_gradient_query_uses_smooth_surface_only(tmp_path, monkeypatch):
     }
     (public / "data/surface.json").write_text(json.dumps(payload))
     monkeypatch.setattr(web, "PUBLIC", public)
+    monkeypatch.setattr(web, "DEPLOY", tmp_path / "deploy")
     response = CLIENT.post("/api/gradient", json={"longitude":-122,"latitude":37,"bearing":90})
     assert response.status_code == 200, response.text
     assert abs(response.json()["directional_derivative_usd_per_km"] - 2) < 1e-9
@@ -89,5 +100,6 @@ def test_gradient_query_uses_smooth_surface_only(tmp_path, monkeypatch):
 
 def test_unavailable_surface_is_reported(tmp_path, monkeypatch):
     monkeypatch.setattr(web, "PUBLIC", tmp_path)
+    monkeypatch.setattr(web, "DEPLOY", tmp_path / "deploy")
     assert CLIENT.get("/api/surface").status_code == 503
     assert CLIENT.post("/api/gradient", json={"longitude":-122,"latitude":37}).status_code == 503
