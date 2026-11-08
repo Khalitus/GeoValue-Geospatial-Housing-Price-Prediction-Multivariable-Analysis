@@ -25,3 +25,43 @@ def housing_csv(tmp_path, housing_frame):
     path = tmp_path / "housing.csv"
     housing_frame.to_csv(path, index=False)
     return path
+
+
+@pytest.fixture
+def synthetic_housing() -> pd.DataFrame:
+    """Deterministic fake areas for testing, never used for reporting model accuracy."""
+    import numpy as np
+
+    rng = np.random.default_rng(2026)
+    n = 180
+    longitude = rng.uniform(-124, -114, n)
+    latitude = rng.uniform(32, 42, n)
+    households = rng.integers(50, 900, n)
+    rooms = households * rng.uniform(3, 8, n)
+    bedrooms = rooms * rng.uniform(0.15, 0.32, n)
+    bedrooms[::13] = np.nan
+    population = households * rng.uniform(1.5, 4.0, n)
+    income = rng.uniform(1.0, 9.0, n)
+    near_ocean = longitude < -120
+    value = (
+        50_000
+        + income * 31_000
+        + (longitude + 124) * 2_500
+        + (latitude - 32) * 1_000
+        + near_ocean * 19_000
+        + rng.normal(0, 9_000, n)
+    )
+    return pd.DataFrame(
+        {
+            "longitude": longitude,
+            "latitude": latitude,
+            "housing_median_age": rng.integers(1, 52, n),
+            "total_rooms": rooms,
+            "total_bedrooms": bedrooms,
+            "population": population,
+            "households": households,
+            "median_income": income,
+            "ocean_proximity": np.where(near_ocean, "NEAR OCEAN", "INLAND"),
+            "median_house_value": np.clip(value, 15_000, 500_001),
+        }
+    )
