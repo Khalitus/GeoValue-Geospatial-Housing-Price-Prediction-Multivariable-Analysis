@@ -1,220 +1,81 @@
 # GeoValue
 
-**Geospatial Housing Price Prediction with Machine Learning and Multivariable Calculus**
+**Historical housing-value prediction and geospatial calculus**  
+Python 3.12+ · scikit-learn · XGBoost · NumPy/SciPy · FastAPI · pytest
 
-GeoValue is a university project using historical **1990 California census block-group** records. The prediction target is the **median house value of a census area**, not a specific home's current market price.
+GeoValue is a **local-first university research application** built around the California Housing Prices dataset (1990 census-area statistics). It combines supervised regression, geographical visualization, and a smoothed two-variable price surface for numerical gradient and double-integral analysis. The predictions are **historical area-level median values**, not prices of individual homes or current appraisals.
 
-## Five-task roadmap
+![GeoValue desktop overview](docs/images/overview-desktop.png)
 
-1. Foundation, Kaggle dataset validation and descriptive analysis — **complete**.
-2. Feature engineering, Linear Regression, Random Forest, XGBoost, evaluation and saved ML pipeline — **complete**.
-3. Geospatial visualization, mathematical price surfaces, gradients, numerical double integration and a complete inference CLI — **complete**.
-4. FastAPI web interface and Vercel deployment.
-5. Final documentation, report and presentation materials.
+*Interface screenshot from a synthetic browser-test fixture. The model-evaluation figures in this repository are taken from the separately recorded real-data experiment; the plotted locations in the screenshot are not experimental evidence.*
 
-## Requirements
+## What works
 
-- Python 3.12+ (the project was designed for 3.12)
-- Kaggle's `housing.csv` from <https://www.kaggle.com/datasets/camnugent/california-housing-prices>
-- Git
+- Validate the 20,640-record housing dataset and summarize its numerical/categorical fields.
+- Engineer housing ratios and train Linear Regression, Random Forest, and XGBoost with an income-stratified 60/20/20 development/validation/test split.
+- Select by validation RMSE, refit on the development partition, and evaluate once on a held-out test partition.
+- Predict from single feature sets, CSV batches, or a local browser form.
+- Create observed/predicted geographical displays, 3D scenario surfaces, contours, gradient fields, and numerical double-integral reports.
+- Run synthetic-data unit and integration tests locally or in GitHub Actions.
 
-## Install on macOS (recommended: uv)
+## Recorded result
 
-If your `uv` and Python 3.12 setup from Task 1 already works, **reuse your existing `.venv`**:
+| Model selected | Held-out MAE | Held-out RMSE | Held-out R² |
+|---|---:|---:|---:|
+| XGBoost | $30,559.76 | $45,167.23 | 0.84347 |
 
-```sh
-source .venv/bin/activate
-uv pip install --link-mode copy -e ".[ml,geo,dev]"
-```
+Values are in **historical 1990 US dollars**. Source of record: [`public/data/training-report.json`](public/data/training-report.json). These results are based on a random income-stratified holdout, **not** a geographical holdout.
 
-Alternatively, with an existing Python 3.12 virtual environment:
+## Local setup
 
-```sh
-python -m pip install -e ".[ml,geo,dev]"
-```
+Use Python **3.12** for compatibility with the recorded model. From the repository root, create and activate an environment. On macOS, an internal-drive environment is recommended if the project is stored on an external SSD:
 
-XGBoost is a compiled dependency. Its PyPI distributions support Intel and Apple Silicon Macs, but some macOS installations may need an OpenMP runtime. Check `python -c "import xgboost; print(xgboost.__version__)"` before training. If the import complains specifically about missing `libomp.dylib`, see the XGBoost installation guide and install the OpenMP runtime; do not rebuild Python.
-
-Keep your previously downloaded `data/raw/housing.csv` in place. The raw CSV and generated artifacts are excluded from Git.
-
-## Task 1 — Explore the dataset
-
-```sh
-geovalue status
-geovalue inspect --data data/raw/housing.csv --output reports/dataset-summary.json
-```
-
-## Task 2 — Train, compare, save and inspect models
-
-```sh
-geovalue train \
-  --data data/raw/housing.csv \
-  --model-output artifacts/housing-model.joblib \
-  --report-output reports/training-report.json \
-  --seed 42
-
-geovalue model-info --model artifacts/housing-model.joblib
-```
-
-Model selection and test evaluation happen automatically inside `train`. It prints a short JSON summary and saves the complete report to `reports/training-report.json`.
-
-Inspect your actual measured results:
-
-```sh
-python -m json.tool reports/training-report.json
-```
-
-Use fewer trees for a quick smoke test, **not your final report**:
-
-```sh
-geovalue train --forest-trees 8 --xgboost-trees 12 \
-  --model-output artifacts/quick-model.joblib \
-  --report-output reports/quick-training.json
-```
-
-### How we prevent data leakage
-
-- First split input rows into train (60%), validation (20%), and held-out test (20%) sets using a fixed random seed. When sample counts allow, the split is stratified on coarse median-income bins.
-- All numeric imputation, scaling and one-hot category learning happen **inside scikit-learn pipelines**, fitted on the training subset only.
-- Train and compare all three model families on the same train/validation partitions.
-- Select the model with the **lowest validation RMSE**. The test set is not used for model selection.
-- Compare this selected model on validation data with and without **longitude, latitude and ocean_proximity**. This is a feature-ablation experiment, not a causal study.
-- Fit a fresh instance of the chosen model on train+validation, then evaluate it **once** on the untouched test rows.
-- Save the complete inference pipeline to `artifacts/housing-model.joblib`, including preprocessing and the chosen regressor.
-
-### Three models
-
-- `linear`: ordinary least-squares Linear Regression (baseline)
-- `random_forest`: Random Forest regressor (120 trees by default)
-- `xgboost`: gradient-boosted tree regression (220 trees by default)
-
-### Feature engineering
-
-`HousingFeatureEngineer` adds `rooms_per_household`, `bedrooms_per_room` and `population_per_household`. Undefined ratios, including missing bedroom counts, remain NaN and are then imputed using **training-only** median statistics. Numerical features are standardized; `ocean_proximity` is one-hot encoded with safe handling of unknown categories.
-
-### Report fields
-
-- `validation_results`: train and validation MAE, RMSE and R² per model.
-- `selected_model` and `selection_metric`: the winning architecture and validation criterion.
-- `geographic_feature_experiment`: validation metrics with/without location features and the RMSE difference.
-- `held_out_test`: final test MAE, RMSE and R² of the refitted winner.
-- `software_versions`: versions to support reproducibility and deployment compatibility.
-
-All error metrics are in historical (1990) US dollars. The source data caps median house values at 500001, affecting error interpretation near the upper limit. A standard random split is not a spatial holdout; geographical generalization needs separate tests.
-
-### Programmatic inference
-
-```python
-import pandas as pd
-from geovalue.modeling import predict_records
-
-rows = pd.read_csv("data/raw/housing.csv").drop(columns=["median_house_value"]).head(2)
-values = predict_records("artifacts/housing-model.joblib", rows)
-print(values)
-```
-
-Only load `.joblib` artifacts you created or trust: like other pickle-based formats, Joblib loading can execute arbitrary code.
-
-## Task 3 — Predict, map and calculate geographical change
-
-**Task 3 completes the required core project.** The web GUI and deployment are separate Task 4 deliverables. Follow [docs/TASK_3.md](docs/TASK_3.md) for all parameters, equations, assumptions and safety limitations.
-
-Use your existing saved XGBoost model; **no retraining is required**:
-
-```sh
-geovalue predict --model artifacts/housing-model.joblib \
-  --longitude -122.23 --latitude 37.88 \
-  --housing-median-age 41 --total-rooms 880 --total-bedrooms 129 \
-  --population 322 --households 126 --median-income 8.3252 \
-  --ocean-proximity "NEAR BAY"
-
-geovalue predict --model artifacts/housing-model.joblib \
-  --input data/my-input-areas.csv --output reports/predictions.csv
-
-geovalue analyze --data data/raw/housing.csv \
-  --model artifacts/housing-model.joblib \
-  --output-dir reports/geospatial --grid-size 90 --sigma 1.6 \
-  --support-km 45 --map-points 1250
-
-geovalue gradient --surface reports/geospatial/price-surface.npz \
-  --longitude -122.23 --latitude 37.88 --bearing 90
-```
-
-`analyze` generates interactive observed/predicted housing-value maps, a 3D mathematical price surface, a contour plot, a gradient field, a numerical `.npz` file and a JSON report containing the double integral and assumptions. HTML maps use online tiles/Plotly.js from a CDN. The gradient is the numerical derivative **of the smoothed scenario surface**, not of raw XGBoost tree predictions. All model predictions describe **historical 1990 California census-area median housing values**, not current individual properties.
-
-### Explanation of the calculus
-
-In projected California Albers coordinates, the price field is a two-variable function \(S(x,y)\). We calculate partial derivatives \(S_x,S_y\), the gradient \(\nabla S=(S_x,S_y)\), and its magnitude and a selected directional derivative in USD per kilometre. The average surface value over *supported grid cells* is found with a numerical double integral divided by grid-cell area. See `docs/TASK_3.md` for the formulas and limitations.
-
-## Tests
-
-```sh
-python -m pytest -q
-python -m pytest --cov=geovalue --cov-report=term-missing
-```
-
-Automated tests use generated synthetic records to exercise data validation, feature engineering, trained preprocessing, reproducible splitting, three-model comparisons, geographic ablation, saved-model reloads and CLI integration. **Synthetic test metrics must not be used as university project accuracy results.** GitHub Actions runs the full test suite using `.[ml,geo,dev]`.
-
-## Project structure
-
-```text
-src/geovalue/
-  __init__.py       package version
-  __main__.py       python -m geovalue
-  cli.py            status, inspect, train, model-info, predict, analyze, gradient
-  data.py           loading, schema validation, descriptive statistics
-  features.py       leakage-safe derived housing ratios
-  modeling.py       model factory, metrics, saving, loading, inference
-  training.py       splits, comparison, ablation, final refit + test
-  inference.py      single/CSV input validation and saved-model predictions
-  geospatial.py     California map projection and observed/predicted Folium map
-  calculus.py       projected smooth scenario, gradients, directional derivatives, integrals
-  visualization.py  interactive 3D surface, contours and gradient vector field
-  analysis.py       reproducible complete geospatial export pipeline
-
-tests/               pytest units and integration tests
-docs/TASK_2.md       detailed explanation of training methodology
-docs/TASK_3.md       complete geospatial/calculus and inference methodology
-artifacts/           locally generated models (ignored by Git)
-reports/             locally generated JSON reports (ignored by Git)
-```
-
-## Data/license notes
-
-Download housing data through the Kaggle dataset page. Review the original data licensing and attribution conditions before redistributing. Do not commit the raw CSV, credentials or user-specific files.
-
-## Task 4 — Browser dashboard and Vercel
-
-The browser application is implemented with FastAPI and lightweight static assets. It provides a trained-model prediction form, validation and test metrics, a map of observed/predicted values, a 3D scenario surface, contour lines, and an interactive gradient query.
-
-To use it with your **own** Task 3 results, merge the Task 4 update into the EXISTING project (do not replace the folder), then run:
-
-```sh
+```bash
+uv python install 3.12
+uv venv --python 3.12 "$HOME/.venvs/geovalue"
 source "$HOME/.venvs/geovalue/bin/activate"
 uv pip install --link-mode copy -e ".[ml,geo,web,dev]"
-python -m pytest -q
-python scripts/prepare_deployment.py
-uvicorn app:app --reload
 ```
 
-Open http://127.0.0.1:8000. The web API will return 503 for model predictions until the trusted model is available at `deploy/housing-model.joblib` (or `artifacts/housing-model.joblib` for local development); a missing asset is not silently replaced with a fictitious prediction.
+For other platforms, use a Python 3.12 virtual environment and `python -m pip install -e ".[ml,geo,web,dev]"`.
 
-**Avoid losing your CSV/JSON files.** The dataset, training report, geographical report and model are generated locally and ignored by Git. Rather than replacing the project directory, merge the update ZIP with `unzip -o ... -d .`. The Task 4 source ZIP cannot contain files that exist only on your Mac. Run `python scripts/package_full.py` inside your existing folder to create a truly complete ZIP with all of your own CSV, JSON, model and NPZ files.
+Obtain `housing.csv` from [Kaggle's California Housing Prices dataset](https://www.kaggle.com/datasets/camnugent/california-housing-prices) and place it at `data/raw/housing.csv` if you intend to retrain. Never use a different dataset without first confirming its schema and provenance.
 
-Complete deployment instructions and version constraints: [docs/TASK_4.md](docs/TASK_4.md).
-
-If the 20,640-row CSV has already been lost, run `python scripts/restore_dataset.py` to download the matching publicly archived California housing file without overwriting any existing CSV.
-
-## Refined web interface (Task 4 UI update)
-
-The browser interface at `http://127.0.0.1:8000` now has focused sections for model performance, single-record prediction, geographical comparisons, calculus, and methodology. The geography page uses latitude/longitude scatter coordinates without remote map tiles; its 3D surface falls back to a top-down heatmap on browsers without WebGL. The calculus page includes supported-grid presets and a nearest-supported-location control.
-
-Use the **UI update ZIP** to merge changed source files into your existing project. Do not replace the project directory: the downloaded `data/raw/housing.csv`, `artifacts/housing-model.joblib`, locally generated `reports/*.json`, and prepared deployment assets live only on your machine and should be preserved.
-
-```sh
-source "$HOME/.venvs/geovalue/bin/activate"
+```bash
 python -m pytest -q
 python -m uvicorn app:app --reload
 ```
 
-When you need a backup including your local raw CSV and trained model, run `python scripts/package_full.py` from the repository root. This ZIP is private and should not be committed to GitHub.
+Open **http://127.0.0.1:8000**. Use `python -m uvicorn`, rather than a system-wide `uvicorn` executable, to select the active interpreter. Existing trusted model and dashboard assets can support the interface without retraining; to rebuild them from your own dataset, see the [User guide](docs/USER_GUIDE.md).
+
+## CLI quickstart
+
+```bash
+geovalue inspect --data data/raw/housing.csv --output reports/dataset-summary.json
+geovalue train --data data/raw/housing.csv --model-output artifacts/housing-model.joblib --report-output reports/training-report.json --seed 42
+geovalue analyze --data data/raw/housing.csv --model artifacts/housing-model.joblib --output-dir reports/geospatial --grid-size 90 --sigma 1.6 --support-km 45
+geovalue predict --model artifacts/housing-model.joblib --input data/examples/prediction-input.csv --output reports/predictions.csv
+```
+
+Local generated data, calculations and models should be backed up using `python scripts/package_full.py`. Do not replace a working project directory just to update documentation.
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [Architecture](docs/ARCHITECTURE.md) | Modules, data flow, persistence and application boundaries |
+| [Methodology](docs/METHODOLOGY.md) | Dataset, modeling, reproducibility, geographical calculus |
+| [User guide](docs/USER_GUIDE.md) | Installation, commands, GUI, outputs and troubleshooting |
+| [Testing](docs/TESTING.md) | CI, unit tests, stress evidence and limits |
+| [Project report](docs/PROJECT_REPORT.md) | Academic report with results, equations, discussion and references |
+| [Figures](docs/FIGURES.md) | Screenshot and results-figure catalog |
+| [References](docs/REFERENCES.md) | Dataset, algorithms, scientific tools and projection sources |
+| [Release notes](docs/RELEASE_NOTES.md) | What is completed, known limitations and provenance |
+
+The historical implementation notes remain at [Task 2](docs/TASK_2.md), [Task 3](docs/TASK_3.md), and [Task 4](docs/TASK_4.md).
+
+## Scope and limitations
+
+GeoValue is an educational prototype, not a valuation service. The geographical-gradient explorer differentiates a **Gaussian-smoothed fixed-feature surface**, not raw XGBoost trees. Spatial gradients are descriptive, not causal, and the numerical integration region is a sample-supported grid, **not California's administrative land boundary**. Some browser charts require internet access to load Plotly JavaScript from a CDN; hosting is not required, but the browser is not fully offline. The Vercel deployment was deliberately abandoned, and cloud operation is not part of the final deliverable.
+
+The raw dataset and locally generated artifacts are excluded from normal Git staging. Use only `.joblib` model files you created or independently trust; loading Joblib files can execute arbitrary code.
