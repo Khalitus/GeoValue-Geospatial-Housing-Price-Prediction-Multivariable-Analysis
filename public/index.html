@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="GeoValue explores California's 1990 census-area housing values using machine learning and spatial calculus.">
+  <meta name="theme-color" content="#f8f8f5">
+  <title>GeoValue — California housing research</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://cdn.plot.ly" crossorigin>
+  <script defer src="https://cdn.plot.ly/plotly-2.35.3.min.js"></script>
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <button class="wordmark" type="button" data-page="overview" aria-label="GeoValue home">
+        <span class="wordmark-symbol" aria-hidden="true">G<span>·</span></span>
+        <span class="wordmark-label">GeoValue <small>Research workspace</small></span>
+      </button>
+      <nav class="site-nav" aria-label="Main navigation">
+        <button type="button" class="nav-link active" data-page="overview" aria-current="page">Overview</button>
+        <button type="button" class="nav-link" data-page="predict">Prediction</button>
+        <button type="button" class="nav-link" data-page="geography">Geography</button>
+        <button type="button" class="nav-link" data-page="calculus">Calculus</button>
+        <button type="button" class="nav-link" data-page="about">Method</button>
+      </nav>
+      <div id="model-status" class="service-status" role="status" aria-live="polite"><span class="status-dot"></span><span class="status-text">Connecting</span></div>
+    </div>
+  </header>
+
+  <main id="content" class="container" tabindex="-1">
+    <section id="page-overview" class="page active" aria-labelledby="heading-overview">
+      <div class="page-intro overview-intro">
+        <div>
+          <p class="overline">California housing / 1990 census data</p>
+          <h1 id="heading-overview">California housing,<br>mapped and modeled.</h1>
+          <p class="intro-copy">An explorable research model of historical census-area housing values, built with XGBoost and multivariable calculus.</p>
+          <div class="inline-actions"><button type="button" class="button primary" data-goto="predict">Make a prediction <span aria-hidden="true">→</span></button><button type="button" class="button quiet" data-goto="geography">Explore the map</button></div>
+        </div>
+        <aside class="context-note" aria-label="Data context">
+          <span class="context-index">01 / DATA CONTEXT</span>
+          <p>All prices are in <strong>1990 US dollars</strong> and describe <strong>census-area medians</strong>. They are not current home appraisals or individual sale prices.</p>
+          <span>20,640 records · California</span>
+        </aside>
+      </div>
+
+      <div class="section-title"><div><p class="overline">Model evaluation</p><h2>Held-out performance</h2></div><span class="section-meta">XGBoost / random income-stratified test split</span></div>
+      <div class="metrics four">
+        <article class="metric"><div class="metric-label">Test R²</div><div class="metric-value" id="stat-r2">—</div><p>Explained variation</p></article>
+        <article class="metric"><div class="metric-label">Mean absolute error</div><div class="metric-value" id="stat-mae">—</div><p>Historical USD</p></article>
+        <article class="metric"><div class="metric-label">Root mean squared error</div><div class="metric-value" id="stat-rmse">—</div><p>Historical USD</p></article>
+        <article class="metric"><div class="metric-label">Geographical features</div><div class="metric-value" id="stat-geo">—</div><p>Validation RMSE reduction</p></article>
+      </div>
+
+      <div class="split-grid overview-charts">
+        <section class="surface-card">
+          <div class="card-head"><div><h3>Models compared</h3><p>Validation RMSE · lower values are better</p></div></div>
+          <div class="plot chart-small" id="model-chart" aria-label="Validation RMSE by regression model"></div>
+        </section>
+        <section class="surface-card">
+          <div class="card-head"><div><h3>Value of geographical information</h3><p>Same model, with versus without location variables</p></div></div>
+          <div class="comparison">
+            <div class="comparison-lead"><strong id="impact-score">—</strong><span>lower validation error with geography</span></div>
+            <div class="comparison-entry"><div class="compare-line"><span>With location</span><strong id="geo-with">—</strong></div><div class="track"><div id="bar-with" class="bar with-geo"></div></div></div>
+            <div class="comparison-entry"><div class="compare-line"><span>Without location</span><strong id="geo-without">—</strong></div><div class="track"><div id="bar-without" class="bar no-geo"></div></div></div>
+            <p class="caption">Descriptive validation comparison—not evidence of causation or performance in geographically unseen regions.</p>
+          </div>
+        </section>
+      </div>
+      <div class="bottom-prompt"><div><h3>Explore how prices change across space.</h3><p>Use the surface, contour map and gradient field to connect model outputs with multivariable calculus.</p></div><button class="text-link" type="button" data-goto="calculus">Open calculus explorer <span aria-hidden="true">→</span></button></div>
+    </section>
+
+    <section id="page-predict" class="page" aria-labelledby="heading-predict">
+      <div class="page-intro compact"><p class="overline">Model / inference</p><h1 id="heading-predict">Estimate an area's median value.</h1><p class="intro-copy">Enter the characteristics of a California census area. The estimate is based on historical 1990 data.</p></div>
+      <div class="predict-layout">
+        <section class="surface-card form-surface">
+          <div class="card-head"><div><h2>Area characteristics</h2><p>Nine input features used during model training</p></div><button id="restore-example" type="button" class="text-link small">Restore example</button></div>
+          <form id="predict-form" autocomplete="off">
+            <fieldset class="field-section"><legend>Location</legend><p class="field-section-sub">Use geographical coordinates for a California census block group.</p>
+              <div class="form-grid">
+                <label>Longitude <span>Degrees west</span><input name="longitude" type="number" step="any" required min="-180" max="180" value="-122.23"></label>
+                <label>Latitude <span>Degrees north</span><input name="latitude" type="number" step="any" required min="-90" max="90" value="37.88"></label>
+                <label class="span-two">Ocean proximity <span>Dataset's categorical designation</span>
+                  <select name="ocean_proximity" required><option value="NEAR BAY">Near bay</option><option value="&lt;1H OCEAN">Less than 1 hour from ocean</option><option value="INLAND">Inland</option><option value="NEAR OCEAN">Near ocean</option><option value="ISLAND">Island</option></select>
+                </label>
+              </div>
+            </fieldset>
+            <fieldset class="field-section"><legend>Housing and population</legend><p class="field-section-sub">Use aggregate census-area counts, not single-property attributes.</p>
+              <div class="form-grid">
+                <label>Median housing age <span>Years</span><input name="housing_median_age" type="number" step="any" required min="0" value="41"></label>
+                <label>Median income <span>Units of $10,000</span><input name="median_income" type="number" step="any" required min="0" value="8.3252"></label>
+                <label>Total rooms <span>Census-area count</span><input name="total_rooms" type="number" step="any" required min="0" value="880"></label>
+                <label>Total bedrooms <span>Optional; imputed if blank</span><input name="total_bedrooms" type="number" step="any" min="0" value="129"></label>
+                <label>Population <span>People</span><input name="population" type="number" step="any" required min="0" value="322"></label>
+                <label>Households <span>Must be greater than zero</span><input name="households" type="number" step="any" required min="0.000001" value="126"></label>
+              </div>
+            </fieldset>
+            <div class="form-footer"><p class="form-message" id="predict-error" role="alert" hidden></p><button id="predict-submit" type="submit" class="button primary">Estimate value <span aria-hidden="true">→</span></button></div>
+          </form>
+        </section>
+        <aside class="predict-aside">
+          <section class="result-surface" aria-live="polite" aria-atomic="true">
+            <p class="overline">Model estimate / 1990 USD</p>
+            <div id="prediction-result" class="result-value">—</div>
+            <p id="prediction-description" class="result-description">Ready to predict. Submit the form to calculate a model estimate.</p>
+            <div id="prediction-note" class="result-note" hidden></div>
+            <div class="result-bottom"><span>Model</span><strong>XGBoost regression</strong></div>
+          </section>
+          <section class="plain-note"><h3>How to read this result</h3><p>The model estimates a census area's <em>median house value</em>, not what a particular house would sell for. Features and preprocessing match the training pipeline.</p><p>Predictions outside the training region or plausible feature ranges can be unreliable.</p></section>
+        </aside>
+      </div>
+    </section>
+
+    <section id="page-geography" class="page" aria-labelledby="heading-geography">
+      <div class="page-intro compact"><p class="overline">Spatial exploration</p><h1 id="heading-geography">The geography of value.</h1><p class="intro-copy">Compare observed census-area values with model predictions and inspect the smoothed scenario surface.</p></div>
+      <section class="surface-card map-card"><div class="card-head"><div><h2>Housing values across California</h2><p id="map-point-count">Geographically sampled census-area points</p></div><div class="segmented" role="group" aria-label="Map value layer"><button type="button" data-layer="observed" class="layer-button active" aria-pressed="true">Observed</button><button type="button" data-layer="predicted" class="layer-button" aria-pressed="false">Predicted</button><button type="button" data-layer="error" class="layer-button" aria-pressed="false">Absolute error</button></div></div><div id="housing-map" class="plot map-plot" aria-label="Geographic scatter plot of California housing values"></div><p class="caption">Select a dot to copy that location into the prediction form. The map displays a reproducible sample, not every census area.</p></section>
+      <div class="split-grid map-secondary">
+        <section class="surface-card"><div class="card-head"><div><h2>Smoothed 3D price surface</h2><p>Fixed non-geographic reference features</p></div></div><div id="surface-plot" class="plot chart-large"></div></section>
+        <section class="surface-card"><div class="card-head"><div><h2>Contour map</h2><p>Equal modeled-value curves</p></div></div><div id="contour-plot" class="plot chart-large"></div></section>
+      </div>
+      <p class="method-disclaimer">Surface charts use Gaussian smoothing on a projected grid (EPSG:3310). They are not raw XGBoost gradients or a direct map of individual-property prices.</p>
+    </section>
+
+    <section id="page-calculus" class="page" aria-labelledby="heading-calculus">
+      <div class="page-intro compact"><p class="overline">Multivariable calculus / application</p><h1 id="heading-calculus">Where is the surface rising?</h1><p class="intro-copy">Inspect modeled spatial gradients and query a directional derivative at a supported grid location.</p></div>
+      <div class="metrics three">
+        <article class="metric"><div class="metric-label">Integrated grid area</div><div id="integral-area" class="metric-value">—</div><p>Supported km²</p></article>
+        <article class="metric"><div class="metric-label">Mean scenario value</div><div id="integral-mean" class="metric-value">—</div><p>1990 USD</p></article>
+        <article class="metric"><div class="metric-label">Mean gradient magnitude</div><div id="mean-gradient" class="metric-value">—</div><p>1990 USD / km</p></article>
+      </div>
+      <div class="calculus-layout">
+        <section class="surface-card query-card"><div class="card-head"><div><h2>Directional derivative</h2><p>Choose a supported region, or enter your own coordinates.</p></div></div>
+          <form id="gradient-form">
+            <div class="form-grid">
+              <label class="span-two">Quick location <span>Preset coordinates are sampled from the valid surface</span><select id="gradient-presets"><option value="">Select a supported region</option></select></label>
+              <label>Longitude <span>Degrees</span><input name="longitude" type="number" step="any" min="-180" max="180" required value="-122.23"></label>
+              <label>Latitude <span>Degrees</span><input name="latitude" type="number" step="any" min="-90" max="90" required value="37.88"></label>
+              <label class="span-two">Bearing <span id="bearing-value">90° clockwise from projected grid north</span><input name="bearing" id="bearing" type="range" min="0" max="359" step="1" value="90"></label>
+            </div>
+            <p id="location-guidance" class="inline-guidance" aria-live="polite">A derivative can be calculated only near a supported surface grid point.</p>
+            <div class="query-actions"><button class="button primary" type="submit" id="gradient-submit">Calculate derivative <span aria-hidden="true">→</span></button><button class="button quiet" type="button" id="snap-gradient">Find nearest supported point</button></div>
+            <p id="gradient-error" class="form-message" role="alert" hidden></p>
+          </form>
+          <div class="gradient-result" id="gradient-result" aria-live="polite" hidden>
+            <div class="result-label">Directional rate of change</div><div class="gradient-number" id="direction-result">—</div><p id="direction-description" class="result-description">Rate on the smoothed model surface.</p>
+            <dl class="result-facts"><div><dt>Gradient magnitude</dt><dd id="magnitude-result">—</dd></div><div><dt>Steepest ascent bearing</dt><dd id="ascent-result">—</dd></div><div><dt>Nearest sampled cell</dt><dd id="distance-result">—</dd></div></dl>
+          </div>
+        </section>
+        <section class="surface-card"><div class="card-head"><div><h2>Gradient field</h2><p>Arrow direction = steepest modeled increase</p></div></div><div id="gradient-plot" class="plot gradient-plot"></div><p class="caption">Color represents gradient magnitude in 1990 USD per km; arrows represent the direction of local increase on the smoothed scenario surface.</p></section>
+      </div>
+      <section class="math-strip"><div><p class="overline">Mathematical basis</p><h2>Derivatives of a smoothed surface</h2><p>Projected coordinates are measured in kilometres. Calculations use sampled values of a fixed-feature model scenario—not causal effects of moving a property.</p></div><div class="math-expression">∇S = (∂S/∂x, ∂S/∂y)<span>D<sub>θ</sub>S = S<sub>x</sub> sin θ + S<sub>y</sub> cos θ</span></div></section>
+    </section>
+
+    <section id="page-about" class="page" aria-labelledby="heading-about">
+      <div class="page-intro compact"><p class="overline">Research notes</p><h1 id="heading-about">Method and limitations.</h1><p class="intro-copy">The model is useful when its inputs, statistical protocol, and assumptions are understood.</p></div>
+      <div class="method-grid">
+        <article class="method-section"><span>01</span><div><h2>Data and target</h2><p>20,640 California census block groups from 1990. Predictions concern the area's median house value in historical US dollars, not an individual property's current market value.</p></div></article>
+        <article class="method-section"><span>02</span><div><h2>Train and evaluation split</h2><p>60% train, 20% validation and 20% held-out test, stratified by median-income category. The winning model is selected using validation RMSE, refit on development data and evaluated once on the test set.</p></div></article>
+        <article class="method-section"><span>03</span><div><h2>Geographic feature comparison</h2><p>Longitude, latitude and proximity to the ocean improved the random-split validation RMSE. This is an association; it is not a causal claim or a validation on entirely unseen geographies.</p></div></article>
+        <article class="method-section"><span>04</span><div><h2>Spatial calculus</h2><p>Tree predictions are discontinuous. GeoValue constructs a Gaussian-smoothed fixed-feature geographical scenario, evaluates numerical gradients in California Albers coordinates (EPSG:3310), and integrates supported grid cells.</p></div></article>
+        <article class="method-section"><span>05</span><div><h2>Reproducibility</h2><p>Training, numerical calculations and inference remain in tested Python modules. The web interface uses a trusted locally trained model and precomputed chart assets; it does not retrain on each request.</p></div></article>
+        <article class="method-section"><span>06</span><div><h2>Known limitations</h2><p>The historical target is upper-coded at $500,001. Grid resolution and smoothing affect derivative magnitudes. The supported grid region does not exactly match California's land boundaries.</p></div></article>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer"><div class="footer-inner"><span>GeoValue / Academic research project</span><span>California Housing, 1990 · scikit-learn · XGBoost · vector calculus</span></div></footer>
+</body>
+</html>

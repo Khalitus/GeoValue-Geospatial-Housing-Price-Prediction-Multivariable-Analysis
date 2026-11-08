@@ -182,3 +182,39 @@ reports/             locally generated JSON reports (ignored by Git)
 ## Data/license notes
 
 Download housing data through the Kaggle dataset page. Review the original data licensing and attribution conditions before redistributing. Do not commit the raw CSV, credentials or user-specific files.
+
+## Task 4 — Browser dashboard and Vercel
+
+The browser application is implemented with FastAPI and lightweight static assets. It provides a trained-model prediction form, validation and test metrics, a map of observed/predicted values, a 3D scenario surface, contour lines, and an interactive gradient query.
+
+To use it with your **own** Task 3 results, merge the Task 4 update into the EXISTING project (do not replace the folder), then run:
+
+```sh
+source "$HOME/.venvs/geovalue/bin/activate"
+uv pip install --link-mode copy -e ".[ml,geo,web,dev]"
+python -m pytest -q
+python scripts/prepare_deployment.py
+uvicorn app:app --reload
+```
+
+Open http://127.0.0.1:8000. The web API will return 503 for model predictions until the trusted model is available at `deploy/housing-model.joblib` (or `artifacts/housing-model.joblib` for local development); a missing asset is not silently replaced with a fictitious prediction.
+
+**Avoid losing your CSV/JSON files.** The dataset, training report, geographical report and model are generated locally and ignored by Git. Rather than replacing the project directory, merge the update ZIP with `unzip -o ... -d .`. The Task 4 source ZIP cannot contain files that exist only on your Mac. Run `python scripts/package_full.py` inside your existing folder to create a truly complete ZIP with all of your own CSV, JSON, model and NPZ files.
+
+Complete deployment instructions and version constraints: [docs/TASK_4.md](docs/TASK_4.md).
+
+If the 20,640-row CSV has already been lost, run `python scripts/restore_dataset.py` to download the matching publicly archived California housing file without overwriting any existing CSV.
+
+## Refined web interface (Task 4 UI update)
+
+The browser interface at `http://127.0.0.1:8000` now has focused sections for model performance, single-record prediction, geographical comparisons, calculus, and methodology. The geography page uses latitude/longitude scatter coordinates without remote map tiles; its 3D surface falls back to a top-down heatmap on browsers without WebGL. The calculus page includes supported-grid presets and a nearest-supported-location control.
+
+Use the **UI update ZIP** to merge changed source files into your existing project. Do not replace the project directory: the downloaded `data/raw/housing.csv`, `artifacts/housing-model.joblib`, locally generated `reports/*.json`, and prepared deployment assets live only on your machine and should be preserved.
+
+```sh
+source "$HOME/.venvs/geovalue/bin/activate"
+python -m pytest -q
+python -m uvicorn app:app --reload
+```
+
+When you need a backup including your local raw CSV and trained model, run `python scripts/package_full.py` from the repository root. This ZIP is private and should not be committed to GitHub.
