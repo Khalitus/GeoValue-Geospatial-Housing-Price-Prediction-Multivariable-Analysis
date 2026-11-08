@@ -21,3 +21,5 @@ dist/
 !/artifacts/.gitkeep
 /reports/*
 !/reports/.gitkeep
+
+._*
