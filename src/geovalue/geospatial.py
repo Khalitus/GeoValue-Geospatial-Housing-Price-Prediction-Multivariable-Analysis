@@ -58,7 +58,7 @@ def make_housing_map(
         indexes = np.sort(np.random.default_rng(random_state).choice(indexes, max_points, replace=False))
     chosen = coords[indexes]
     center = [float(np.median(chosen[:, 1])), float(np.median(chosen[:, 0]))]
-    chart = folium.Map(location=center, zoom_start=6, tiles="CartoDB positron", control_scale=True)
+    chart = folium.Map(location=center, zoom_start=6, tiles="OpenStreetMap", control_scale=True)
 
     all_values = chosen[:, 2]
     if predictions is not None:

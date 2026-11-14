@@ -40,3 +40,7 @@ dist/
 /data/official/processed/
 /artifacts/official/
 /reports/official/
+
+# Task 7 official county browser artifacts (regenerated with local trained model)
+/public/official/data/*.json
+!/public/official/data/.gitkeep

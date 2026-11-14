@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="GeoValue: official Allegheny County residential sale price research, spatial evidence and numerical calculus.">
+  <meta name="theme-color" content="#f8f9f8">
+  <title>GeoValue | Residential sale research</title>
+  <link rel="icon" type="image/svg+xml" href="/official/favicon.svg">
+  <link rel="stylesheet" href="/official/styles.css">
+  <script defer src="/official/plotly.min.js"></script>
+  <script defer src="/official/app.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header class="site-header">
+  <div class="nav-shell">
+    <button type="button" class="brand" data-page="overview" aria-label="GeoValue overview"><span class="brand-mark">G<span class="brand-dot">.</span></span><span>GeoValue<small>Property research</small></span></button>
+    <nav aria-label="Main navigation" class="nav" id="nav">
+      <button class="nav-item selected" type="button" data-page="overview" aria-current="page">Overview</button>
+      <button class="nav-item" type="button" data-page="estimate">Estimate</button>
+      <button class="nav-item" type="button" data-page="geography">Geography</button>
+      <button class="nav-item" type="button" data-page="calculus">Calculus</button>
+      <button class="nav-item" type="button" data-page="method">Method</button>
+    </nav>
+    <div id="health" class="health" role="status" aria-live="polite"><span class="health-dot"></span><span id="health-text">Checking model</span></div>
+  </div>
+</header>
+<main id="main" class="shell" tabindex="-1">
+  <section class="page active" id="page-overview" aria-labelledby="overview-title">
+    <div class="hero">
+      <div><p class="overline">Allegheny County, Pennsylvania · 2013–2025</p><h1 id="overview-title">Recorded housing sales.<br><em>Explored spatially.</em></h1><p class="lede">Property-level regression on official county transactions, with geographical support evidence and a controlled numerical-calculus scenario.</p><div class="hero-actions"><button class="action primary" data-goto="estimate">Estimate a sale price <span aria-hidden="true">→</span></button><button class="action light" data-goto="geography">Explore geography</button></div></div>
+      <aside class="notice"><p class="overline">Scope</p><p>Historical nominal sale prices for recorded residential transactions, <strong>not</strong> live listings, individual appraisals or guaranteed future values.</p><span>Official source: Allegheny County / WPRDC</span></aside>
+    </div>
+    <div class="section-heading"><div><p class="overline">2025 holdout</p><h2>Measured performance</h2></div><span class="context" id="model-name">Awaiting training report</span></div>
+    <div class="metrics"><article><span>Held-out R²</span><strong id="stat-r2">—</strong><small>Explained target variance</small></article><article><span>Mean absolute error</span><strong id="stat-mae">—</strong><small>Nominal USD</small></article><article><span>Root mean squared error</span><strong id="stat-rmse">—</strong><small>Nominal USD</small></article><article><span>Eligible sale records</span><strong id="stat-count">—</strong><small>Through December 2025</small></article></div>
+    <div class="panel-grid"><article class="panel"><div class="panel-heading"><h3>Models compared</h3><p>Validation RMSE in 2024 · logarithmic USD scale (lower is better)</p></div><div id="model-chart" class="plot medium" role="img" aria-label="Validation RMSE by candidate algorithm"></div></article><article class="panel"><div class="panel-heading"><h3>Contribution of location</h3><p>Selected algorithm, with and without geographical variables</p></div><div id="geography-chart" class="plot medium" role="img" aria-label="Geography feature ablation comparison"></div></article></div>
+    <p class="footnote">Training: 2013–2023 · validation: 2024 · test: 2025, with parcel-disjoint partitions. Current assessment attributes can postdate earlier sales; this remains a limitation of retrospective evaluation.</p>
+  </section>
+  <section class="page" id="page-estimate" aria-labelledby="estimate-title">
+    <div class="intro"><p class="overline">Property-level prediction</p><h1 id="estimate-title">Estimate a recorded sale price.</h1><p>Provide physical property details, location and a historical transaction date. These fields match the fitted official-data pipeline.</p></div>
+    <div class="form-layout"><section class="panel form-panel">
+      <form id="property-form">
+        <fieldset><legend>Location and transaction</legend><div class="form-grid">
+          <label>Latitude <span>Parcel centroid, degrees</span><input name="latitude" type="number" step="any" min="39.5" max="41" value="40.443" required></label>
+          <label>Longitude <span>Parcel centroid, degrees</span><input name="longitude" type="number" step="any" min="-81" max="-79" value="-79.990" required></label>
+          <label>Sale year <span>2013 through 2025</span><input name="sale_year" type="number" step="1" min="2013" max="2025" value="2025" required></label>
+          <label>Sale month <span>1 through 12</span><input name="sale_month" type="number" step="1" min="1" max="12" value="6" required></label>
+          <label>Municipality <span>County assessment label</span><input name="municipality" type="text" value="Unknown" autocomplete="off"></label>
+          <label>ZIP code <span>5-digit category</span><input name="zip_code" type="text" value="15213" inputmode="numeric"></label>
+        </div></fieldset>
+        <fieldset><legend>Building and lot</legend><div class="form-grid">
+          <label>Finished living area <span>Square feet</span><input name="living_area_sqft" type="number" min="250" max="30000" step="1" value="1540" required></label>
+          <label>Lot area <span>Square feet</span><input name="lot_area_sqft" type="number" min="1" step="1" value="5500" required></label>
+          <label>Bedrooms <span>Number of bedrooms</span><input name="bedrooms" type="number" min="0" max="20" step="1" value="3" required></label>
+          <label>Year built <span>Must not exceed sale year</span><input name="year_built" type="number" min="1700" max="2025" step="1" value="1980" required></label>
+          <label>Full bathrooms <span>Optional</span><input name="full_baths" type="number" min="0" step="1" value="2"></label>
+          <label>Half bathrooms <span>Optional</span><input name="half_baths" type="number" min="0" step="1" value="1"></label>
+        </div></fieldset>
+        <details class="advanced"><summary>Additional property characteristics <span>Optional model inputs</span></summary><div class="form-grid">
+          <label>Total rooms <span>Rooms in building</span><input name="total_rooms" type="number" min="0" step="1" value="7"></label>
+          <label>Stories <span>Number</span><input name="stories" type="number" min="0" step="0.5" value="2"></label>
+          <label>Fireplaces <span>Number</span><input name="fireplaces" type="number" min="0" step="1" value="0"></label>
+          <label>Garage spaces <span>Number</span><input name="garage_spaces" type="number" min="0" step="1" value="1"></label>
+          <label>Construction grade <span>County code</span><input name="construction_grade" type="text" value="C"></label>
+          <label>Condition code <span>County code</span><input name="condition_code" type="text" value="3"></label>
+          <label class="span2">Heating / cooling <span>County description</span><input name="heating_cooling" type="text" value="Central Heat with AC"></label>
+        </div></details>
+        <div class="form-actions"><p id="predict-error" class="error" role="alert" hidden></p><button id="predict-button" class="action primary" type="submit">Calculate estimate <span aria-hidden="true">→</span></button></div>
+      </form>
+    </section><aside class="estimate-side"><section class="result" aria-live="polite"><p class="overline">Estimated recorded sale · nominal USD</p><div class="result-number" id="prediction-value">—</div><p id="prediction-caption">Submit property details to calculate the estimated sale price.</p><div class="result-divider"></div><p class="result-heading">Spatial evidence</p><strong id="support-level" class="support-label">Not calculated</strong><dl id="support-facts" class="support-facts"></dl><p class="tiny">A spatial-support category is <strong>not</strong> a confidence interval. Any displayed error benchmark summarizes historical validation cases.</p></section><div class="aside-note"><h3>Interpretation</h3><p>This system predicts the recorded price of a residential transaction under the county's historical data. It is not a valuation service or a current market appraisal.</p><p>Older transactions are paired with a newer assessment snapshot, which may contain later modifications.</p></div></aside></div>
+  </section>
+  <section class="page" id="page-geography" aria-labelledby="geography-title">
+    <div class="intro"><p class="overline">Observed versus predicted · held-out 2025</p><h1 id="geography-title">Geographical variation.</h1><p>Each plotted point represents a sampled 2025 transaction. Switch between observed prices, predictions and absolute error.</p></div>
+    <article class="panel"><div class="panel-heading flex-head"><div><h3>Recorded sales across Allegheny County</h3><p id="map-meta">Preparing locations</p></div><div class="segments" role="group" aria-label="Point display"><button class="segment active" type="button" data-layer="observed" aria-pressed="true">Observed</button><button class="segment" type="button" data-layer="predicted" aria-pressed="false">Predicted</button><button class="segment" type="button" data-layer="absolute_error" aria-pressed="false">Error</button></div></div><div id="map-plot" class="plot map" role="img" aria-label="Longitude latitude scatter of held-out residential sale transactions"></div><p class="caption" id="map-message">Select a dot to use its location in the estimate and calculus forms; other building features do not change.</p></article>
+    <div class="panel-grid geography-panels"><article class="panel"><div class="panel-heading"><h3>Smoothed scenario surface</h3><p>Fixed property characteristics; location varies</p></div><div id="surface-plot" class="plot large"></div></article><article class="panel"><div class="panel-heading"><h3>Contour field</h3><p>Equal modeled-value curves</p></div><div id="contour-plot" class="plot large"></div></article></div>
+    <p class="footnote">Coordinates are projected to NAD83 / UTM zone 17N (EPSG:26917). The plotted surface is a controlled model scenario, not a map of actual individual sale prices at every coordinate.</p>
+  </section>
+  <section class="page" id="page-calculus" aria-labelledby="calculus-title">
+    <div class="intro"><p class="overline">Spatial multivariable calculus</p><h1 id="calculus-title">Direction, gradient and area.</h1><p>Explore numerical derivatives of the smoothed fixed-feature model surface—not derivatives of the original XGBoost trees.</p></div>
+    <div class="metrics three"><article><span>Supported computational area</span><strong id="stat-area">—</strong><small>km² · not county land area</small></article><article><span>Mean scenario surface</span><strong id="stat-surface-mean">—</strong><small>Nominal USD</small></article><article><span>Mean gradient magnitude</span><strong id="stat-gradient">—</strong><small>USD/km</small></article></div>
+    <div class="form-layout calculus-layout"><section class="panel form-panel"><div class="panel-heading"><h3>Directional derivative</h3><p>Use a supported sample point, or enter coordinates</p></div><form id="gradient-form"><div class="form-grid"><label class="span2">Supported sample point <span>Calculated from finite surface cells</span><select id="gradient-samples"><option value="">Choose a point</option></select></label><label>Latitude <span>Degrees</span><input type="number" name="latitude" step="any" min="39.5" max="41" value="40.443" required></label><label>Longitude <span>Degrees</span><input type="number" name="longitude" step="any" min="-81" max="-79" value="-79.990" required></label><label class="span2">Bearing <span id="bearing-text">90° clockwise from UTM grid north</span><input type="range" min="0" max="359" step="1" value="90" name="bearing" id="bearing-input"></label></div><div class="form-actions"><p id="gradient-error" class="error" hidden role="alert"></p><button class="action primary" id="gradient-button" type="submit">Calculate derivative</button><button class="action light" id="snap-point" type="button">Nearest valid location</button></div></form><div class="derivative-result" id="derivative-result" hidden aria-live="polite"><p class="overline">Directional rate of change</p><div id="derivative-value" class="result-number">—</div><dl id="derivative-facts" class="support-facts"></dl></div></section><section class="panel"><div class="panel-heading"><h3>Magnitude and direction field</h3><p>Heat indicates steepness; arrows show steepest ascent</p></div><div id="gradient-plot" class="plot gradient"></div></section></div>
+    <div class="math-note"><div><p class="overline">Mathematical interpretation</p><h3>Numerical calculus on a model scenario</h3><p>The gradient measures local change on a Gaussian-smoothed scenario. The area integral is over supported grid cells, not an administrative boundary or total real-estate value.</p></div><div class="formulas">∇S = (∂S/∂x, ∂S/∂y)<span>D<sub>θ</sub>S = S<sub>x</sub> sin θ + S<sub>y</sub> cos θ</span><span>mean(S) = ∬<sub>D</sub> S dA / area(D)</span></div></div>
+  </section>
+  <section class="page" id="page-method" aria-labelledby="method-title">
+    <div class="intro"><p class="overline">Methods and research boundaries</p><h1 id="method-title">How to interpret GeoValue.</h1><p>The dataset, evaluation protocol, spatial assumptions and limits are part of the result.</p></div>
+    <div class="method-list"><article><span>01 / Data</span><div><h3>Official county transaction records</h3><p>Residential valid sales from 2013–2025 are joined with parcel assessments and the March 2025 centroids. These are transaction-level prices, not current asking prices.</p></div></article><article><span>02 / Evaluation</span><div><h3>Chronological and parcel-disjoint</h3><p>Training uses sales through 2023, validation uses 2024, and the held-out test contains 2025. A parcel identifier cannot appear across those partitions; municipality holdout provides an additional geographical test.</p></div></article><article><span>03 / Model</span><div><h3>XGBoost selected by validation RMSE</h3><p>Linear Regression, Random Forest and XGBoost use common leakage-conscious preprocessing. The winning architecture is refitted on training plus validation records before final testing.</p></div></article><article><span>04 / Spatial evidence</span><div><h3>Observed density, not confidence</h3><p>The 10th-nearest-training-location distance determines dense, typical and sparse local support categories. Error statistics are calibrated on 2024 validation transactions, with an untouched 2025 support audit. Neither the category nor the 80th-percentile historical error guarantees coverage for a new property.</p></div></article><article><span>05 / Calculus</span><div><h3>Smoothed controlled surface</h3><p>Housing attributes are fixed while projected coordinates vary. Gaussian smoothing makes finite-difference gradients and numerical area integration interpretable as properties of the scenario surface—not physical appreciation or causal changes.</p></div></article><article><span>06 / Limitations</span><div><h3>Retrospective assessment information</h3><p>The contemporary property assessment may describe improvements that occurred after past transactions. Sale records are nominal dollars across years; the numerical integration region can extend outside county land. This work is not an appraisal.</p></div></article></div>
+  </section>
+</main>
+<footer class="footer"><div class="footer-inner"><span>GeoValue · Local academic research application</span><span>Allegheny County, PA · <a href="/legacy">California legacy study</a> · <a href="https://data.wprdc.org/" rel="noopener noreferrer">WPRDC source</a></span></div></footer>
+</body>
+</html>

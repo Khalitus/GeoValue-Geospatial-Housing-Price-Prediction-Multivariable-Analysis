@@ -18,7 +18,8 @@ SAMPLE = {
 
 def test_serves_dashboard_and_browser_assets():
     assert CLIENT.get("/").status_code == 200
-    html = CLIENT.get("/").text
+    assert "Allegheny County" in CLIENT.get("/").text
+    html = CLIENT.get("/legacy").text
     assert "California housing," in html
     assert "Select a supported region" in html
     assert "Gradient field" in html

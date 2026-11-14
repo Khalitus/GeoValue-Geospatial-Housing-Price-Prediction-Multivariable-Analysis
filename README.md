@@ -1,12 +1,51 @@
 # GeoValue
 
-## Official 2025-era residential sales extension (Task 6)
+**Geospatial residential sale-price prediction, spatial evidence, and numerical multivariable calculus.**
 
-GeoValue now provides a **separate official-data ML workflow** in `geovalue-official`. It combines Allegheny County's recorded property sales through **2025**, current residential assessment attributes, and March 2025 parcel centroids. It preserves the original California research, CLI, saved model, and dashboard unchanged; **Task 7** will adapt the geography/calculus interface and finalize the research novelty.
+GeoValue is a local Python research application built from official Allegheny County, Pennsylvania, residential-sale, property-assessment and parcel-centroid records. The primary dataset contains **82,169 eligible sale transactions from 2013–2025**, representing **72,607 parcels** after documented filtering. The application predicts historical recorded sale prices and explores location-linked patterns through a controlled spatial surface. It is **not** a home appraisal, live-market valuation or causal analysis.
 
-Follow **[Task 6: Official dataset and training](docs/TASK_6.md)** for source downloads, dataset construction, the new property features, time-aware validation, leakage limitations, tests, and reproducible commands. The final eligible transaction count and new model accuracy must be measured from the downloaded official files; they are not claimed in advance.
+The earlier 1990 California census-area study remains available at `/legacy` and through the original `geovalue` CLI. It is **not** the main research dataset.
 
-Quick start after activating your existing Python environment and installing the project:
+## Results
+
+Full-data experiment, supplied recorded training report: chronological parcel-disjoint training through 2023, 2024 validation, 2025 test. The best model was **XGBoost**.
+
+| 2025 held-out evaluation | Result |
+|---|---:|
+| Records | 8,691 |
+| MAE | $58,190.78 |
+| RMSE | $101,555.74 |
+| R² | 0.84120 |
+
+A geographical feature experiment reduced 2024 validation RMSE by **$17,956.78** relative to the chosen architecture without latitude, longitude, municipality and ZIP information. These are predictive associations under this evaluation, not causal effects. See [official results and limitations](docs/official/EXPERIMENT_RESULTS.md).
+
+## What is implemented
+
+- Official WPRDC source download, parcel-key joins, explicit valid-sale filtering and an auditable build report.
+- Property-level feature engineering, imputation and encoding in scikit-learn pipelines; Linear Regression, Random Forest and XGBoost comparisons.
+- Chronological train/validation/test partitions with non-overlapping parcel identifiers; municipality holdout and geography ablation.
+- Single-property and batch-CSV predictions through a CLI and FastAPI.
+- **Spatial Evidence Indicator:** 10th-nearest-development-location distance, with support categories calibrated against **2024 validation errors** and independently audited on 2025 records. It is not a confidence interval.
+- Pennsylvania geographical surfaces in **EPSG:26917**; Gaussian smoothing, numerical partial derivatives, gradient fields, directional derivatives and double integration over supported grid cells.
+- A responsive, **local-only** browser interface with offline-bundled chart JavaScript, a 2025 holdout visualization, and `/legacy` access to the original study.
+
+## Local installation
+
+Use Python 3.12. On macOS with a project stored on an external SSD, keep your virtual environment on the internal disk:
+
+```bash
+uv python install 3.12
+uv venv --python 3.12 "$HOME/.venvs/geovalue"
+source "$HOME/.venvs/geovalue/bin/activate"
+uv pip install --link-mode copy -e ".[ml,geo,web,dev]"
+python -m pytest -q
+```
+
+A standard `python -m venv .venv` / `python -m pip install -e ".[ml,geo,web,dev]"` setup also works if filesystem and dependency compatibility permit.
+
+## Reproduce from county files
+
+Official raw sources are downloaded to `data/official/raw/`. They are large and not committed. Review the [source and schema guide](docs/TASK_6.md) before downloading.
 
 ```bash
 geovalue-official sources
@@ -14,87 +53,41 @@ geovalue-official download
 geovalue-official build
 geovalue-official profile
 geovalue-official train
-```
-
-The **legacy** `geovalue` CLI and current browser remain the California baseline until Task 7.
-
-
-**Historical housing-value prediction and geospatial calculus**  
-Python 3.12+ · scikit-learn · XGBoost · NumPy/SciPy · FastAPI · pytest
-
-GeoValue is a **local-first university research application** built around the California Housing Prices dataset (1990 census-area statistics). It combines supervised regression, geographical visualization, and a smoothed two-variable price surface for numerical gradient and double-integral analysis. The predictions are **historical area-level median values**, not prices of individual homes or current appraisals.
-
-![GeoValue desktop overview](docs/images/overview-desktop.png)
-
-*Interface screenshot from a synthetic browser-test fixture. The model-evaluation figures in this repository are taken from the separately recorded real-data experiment; the plotted locations in the screenshot are not experimental evidence.*
-
-## What works
-
-- Validate the 20,640-record housing dataset and summarize its numerical/categorical fields.
-- Engineer housing ratios and train Linear Regression, Random Forest, and XGBoost with an income-stratified 60/20/20 development/validation/test split.
-- Select by validation RMSE, refit on the development partition, and evaluate once on a held-out test partition.
-- Predict from single feature sets, CSV batches, or a local browser form.
-- Create observed/predicted geographical displays, 3D scenario surfaces, contours, gradient fields, and numerical double-integral reports.
-- Run synthetic-data unit and integration tests locally or in GitHub Actions.
-
-## Recorded result
-
-| Model selected | Held-out MAE | Held-out RMSE | Held-out R² |
-|---|---:|---:|---:|
-| XGBoost | $30,559.76 | $45,167.23 | 0.84347 |
-
-Values are in **historical 1990 US dollars**. Source of record: [`public/data/training-report.json`](public/data/training-report.json). These results are based on a random income-stratified holdout, **not** a geographical holdout.
-
-## Local setup
-
-Use Python **3.12** for compatibility with the recorded model. From the repository root, create and activate an environment. On macOS, an internal-drive environment is recommended if the project is stored on an external SSD:
-
-```bash
-uv python install 3.12
-uv venv --python 3.12 "$HOME/.venvs/geovalue"
-source "$HOME/.venvs/geovalue/bin/activate"
-uv pip install --link-mode copy -e ".[ml,geo,web,dev]"
-```
-
-For other platforms, use a Python 3.12 virtual environment and `python -m pip install -e ".[ml,geo,web,dev]"`.
-
-Obtain `housing.csv` from [Kaggle's California Housing Prices dataset](https://www.kaggle.com/datasets/camnugent/california-housing-prices) and place it at `data/raw/housing.csv` if you intend to retrain. Never use a different dataset without first confirming its schema and provenance.
-
-```bash
-python -m pytest -q
+geovalue-official analyze
 python -m uvicorn app:app --reload
 ```
 
-Open **http://127.0.0.1:8000**. Use `python -m uvicorn`, rather than a system-wide `uvicorn` executable, to select the active interpreter. Existing trusted model and dashboard assets can support the interface without retraining; to rebuild them from your own dataset, see the [User guide](docs/USER_GUIDE.md).
-
-## CLI quickstart
+Open **http://127.0.0.1:8000**. The original California interface remains available at **http://127.0.0.1:8000/legacy**. Full training and analysis use official local data and can be performed without deploying the application. For scripted property predictions:
 
 ```bash
-geovalue inspect --data data/raw/housing.csv --output reports/dataset-summary.json
-geovalue train --data data/raw/housing.csv --model-output artifacts/housing-model.joblib --report-output reports/training-report.json --seed 42
-geovalue analyze --data data/raw/housing.csv --model artifacts/housing-model.joblib --output-dir reports/geospatial --grid-size 90 --sigma 1.6 --support-km 45
-geovalue predict --model artifacts/housing-model.joblib --input data/examples/prediction-input.csv --output reports/predictions.csv
+geovalue-official predict --model artifacts/official/residential-sale-model.joblib \
+  --input data/official/examples/property-inputs.csv \
+  --output reports/official/predictions.csv
 ```
 
-Local generated data, calculations and models should be backed up using `python scripts/package_full.py`. Do not replace a working project directory just to update documentation.
+To inspect ambiguous same-day transactions or extreme linear-model predictions:
+
+```bash
+geovalue-official audit
+geovalue-official diagnose
+```
+
+`analyze` additionally generates the trusted local support reference, reliability report and map/surface assets. It recomputes **2024-only** error calibration with the chosen model architecture; no 2025 target values are used to tune its distance cutoffs. The outputs are not generated by pytest.
 
 ## Documentation
 
-| Document | Contents |
-|---|---|
-| [Architecture](docs/ARCHITECTURE.md) | Modules, data flow, persistence and application boundaries |
-| [Methodology](docs/METHODOLOGY.md) | Dataset, modeling, reproducibility, geographical calculus |
-| [User guide](docs/USER_GUIDE.md) | Installation, commands, GUI, outputs and troubleshooting |
-| [Testing](docs/TESTING.md) | CI, unit tests, stress evidence and limits |
-| [Project report](docs/PROJECT_REPORT.md) | Academic report with results, equations, discussion and references |
-| [Figures](docs/FIGURES.md) | Screenshot and results-figure catalog |
-| [References](docs/REFERENCES.md) | Dataset, algorithms, scientific tools and projection sources |
-| [Release notes](docs/RELEASE_NOTES.md) | What is completed, known limitations and provenance |
+- [Task 7 / operation and extension](docs/TASK_7.md)
+- [Official methodology and mathematical definitions](docs/official/METHODOLOGY.md)
+- [Official experiment results and uncertainty limitations](docs/official/EXPERIMENT_RESULTS.md)
+- [Local user guide](docs/official/USER_GUIDE.md)
+- [Architecture](docs/official/ARCHITECTURE.md)
+- [Testing](docs/official/TESTING.md)
+- [Updated academic project report](docs/official/PROJECT_REPORT.md)
+- [Official source/feature schema](docs/official/SCHEMA.md)
+- [California baseline (archived document)](docs/METHODOLOGY.md)
 
-The historical implementation notes remain at [Task 2](docs/TASK_2.md), [Task 3](docs/TASK_3.md), and [Task 4](docs/TASK_4.md).
+## Important limitations
 
-## Scope and limitations
+The assessments are a **current snapshot**, not point-in-time records for every historical sale. Sale prices are nominal dollars from different years. Only explicitly valid sales within configured bounds were retained. The density indicator supplies evidence of training-location representation, **not a calibrated guarantee**. The model's spatial derivatives belong to a **smoothed fixed-feature scenario**, not raw XGBoost or market appreciation. The integration region is a data-supported grid, not Allegheny County's official land polygon.
 
-GeoValue is an educational prototype, not a valuation service. The geographical-gradient explorer differentiates a **Gaussian-smoothed fixed-feature surface**, not raw XGBoost trees. Spatial gradients are descriptive, not causal, and the numerical integration region is a sample-supported grid, **not California's administrative land boundary**. Some browser charts require internet access to load Plotly JavaScript from a CDN; hosting is not required, but the browser is not fully offline. The Vercel deployment was deliberately abandoned, and cloud operation is not part of the final deliverable.
-
-The raw dataset and locally generated artifacts are excluded from normal Git staging. Use only `.joblib` model files you created or independently trust; loading Joblib files can execute arbitrary code.
+Model files (`.joblib`) must come from trusted training runs; deserializing untrusted files can execute code. Large source datasets, derived local reports, and fitted models are ignored by Git. For a full backup including local inputs and trained artifacts, run `python scripts/package_full.py` on the machine that holds them.

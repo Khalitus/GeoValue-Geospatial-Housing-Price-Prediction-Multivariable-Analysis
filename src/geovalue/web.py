@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PUBLIC = ROOT / "public"
 DEPLOY = ROOT / "deploy"
 
-app = FastAPI(title="GeoValue API", version="0.4.1", description="Historical California housing-value predictions")
+app = FastAPI(title="GeoValue API", version="0.4.1", description="Official recorded property-sale research; legacy California comparison available at /legacy")
 
 
 class HousingInput(BaseModel):
@@ -73,7 +73,33 @@ def load_json_file(path: Path) -> dict | None:
 
 @app.get("/", include_in_schema=False)
 def index():
+    return FileResponse(PUBLIC / "official/index.html")
+
+
+@app.get("/legacy", include_in_schema=False)
+def legacy_index():
     return FileResponse(PUBLIC / "index.html")
+
+
+@app.get("/official/{asset}", include_in_schema=False)
+def official_asset(asset: str):
+    safe = {"styles.css":"text/css", "app.js":"application/javascript", "favicon.svg":"image/svg+xml", "plotly.min.js":"application/javascript"}
+    if asset not in safe:
+        raise HTTPException(status_code=404, detail="Unknown official asset")
+    path = PUBLIC / "official" / asset
+    if not path.is_file():
+        raise HTTPException(status_code=503, detail="Official interface asset unavailable")
+    return FileResponse(path, media_type=safe[asset])
+
+
+@app.get("/official/data/{asset}", include_in_schema=False)
+def official_data_asset(asset: str):
+    if asset not in {"points.json", "surface.json", "training-report.json", "geospatial-report.json", "reliability-report.json"}:
+        raise HTTPException(status_code=404, detail="Unknown official data asset")
+    path = PUBLIC / "official/data" / asset
+    if not path.is_file():
+        raise HTTPException(status_code=503, detail="Run geovalue-official analyze to prepare official charts")
+    return FileResponse(path, media_type="application/json")
 
 
 @app.get("/favicon.svg", include_in_schema=False)

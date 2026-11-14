@@ -1,3 +1,5 @@
+> **Legacy California baseline documentation.** This file describes the original 1990 census-area project. The primary GeoValue release now uses official Allegheny County transaction records through 2025; see [official project documentation](official/PROJECT_REPORT.md) and [current methodology](official/METHODOLOGY.md).
+
 # Methodology
 
 ## 1. Research question and unit of analysis
