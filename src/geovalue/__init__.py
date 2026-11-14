@@ -1,3 +1,3 @@
-"""GeoValue: housing analytics and geospatial calculus."""
+"""GeoValue: housing analytics and geographical calculus."""
 
-__version__ = "0.2.0"
+__version__ = "0.6.0"

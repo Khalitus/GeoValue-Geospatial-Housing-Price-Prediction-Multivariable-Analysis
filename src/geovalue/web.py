@@ -215,3 +215,8 @@ def gradient(req: GradientInput):
         "bearing_reference": "California Albers projected grid north, not true north",
         "disclaimer": "Gradient of smoothed fixed-feature modeled surface, not a causal effect.",
     }
+
+
+# Isolated official-data API; existing California GUI and routes remain unchanged.
+from geovalue.official.web import router as official_router
+app.include_router(official_router)

@@ -21,5 +21,22 @@ dist/
 !/artifacts/.gitkeep
 /reports/*
 !/reports/.gitkeep
-
 ._*
+
+# Generated web deployment assets and trusted local models
+/deploy/*
+!/deploy/.gitkeep
+/public/data/points.json
+/public/data/surface.json
+/public/data/geo-report.json
+/public/data/training-report.json
+/public/data/geospatial-report.json
+
+# ZIP and temporary backups
+*.zip
+
+# Task 6 official raw county sources, processed sales, and trained artifacts
+/data/official/raw/
+/data/official/processed/
+/artifacts/official/
+/reports/official/

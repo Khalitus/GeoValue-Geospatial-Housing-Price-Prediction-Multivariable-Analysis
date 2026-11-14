@@ -1,5 +1,24 @@
 # GeoValue
 
+## Official 2025-era residential sales extension (Task 6)
+
+GeoValue now provides a **separate official-data ML workflow** in `geovalue-official`. It combines Allegheny County's recorded property sales through **2025**, current residential assessment attributes, and March 2025 parcel centroids. It preserves the original California research, CLI, saved model, and dashboard unchanged; **Task 7** will adapt the geography/calculus interface and finalize the research novelty.
+
+Follow **[Task 6: Official dataset and training](docs/TASK_6.md)** for source downloads, dataset construction, the new property features, time-aware validation, leakage limitations, tests, and reproducible commands. The final eligible transaction count and new model accuracy must be measured from the downloaded official files; they are not claimed in advance.
+
+Quick start after activating your existing Python environment and installing the project:
+
+```bash
+geovalue-official sources
+geovalue-official download
+geovalue-official build
+geovalue-official profile
+geovalue-official train
+```
+
+The **legacy** `geovalue` CLI and current browser remain the California baseline until Task 7.
+
+
 **Historical housing-value prediction and geospatial calculus**  
 Python 3.12+ · scikit-learn · XGBoost · NumPy/SciPy · FastAPI · pytest
 
