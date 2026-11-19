@@ -1,0 +1,165 @@
+{
+  "generated_utc": "2026-11-19T18:57:41.739943+00:00",
+  "source": "Author's trusted original saved XGBoost artifact (no retraining)",
+  "model_selected": "xgboost",
+  "records_total": 82169,
+  "test_rows": 8691,
+  "saved_model_verified_against_original_2025_report": true,
+  "recomputed_2025_test_metrics": {
+    "mae": 58190.784289018455,
+    "rmse": 101555.74481208979,
+    "r2": 0.8411996698339903
+  },
+  "reported_2025_test_metrics": {
+    "mae": 58190.784289018455,
+    "rmse": 101555.74481208979,
+    "r2": 0.8411996698339903
+  },
+  "grid_shape": [
+    86,
+    86
+  ],
+  "supported_grid_points": 6117,
+  "area_integral_and_mean": {
+    "valid_area_km2": 2331.4426149715428,
+    "integral_usd_km2": 533507923.2878058,
+    "mean_surface_value_usd": 228831.67694621457,
+    "included_grid_cells": 5945
+  },
+  "gaussian_sigma_grid_cells": 1.5,
+  "gradient_display": {
+    "gradient_display_cap_p95_usd_per_km": 10849.060013585286,
+    "original_gradient_max_usd_per_km": 19192.00110899281
+  },
+  "spatial_evidence": {
+    "validation_rows": 8656,
+    "2025_rows": 8691,
+    "validation_error_by_support": {
+      "dense": {
+        "n": 2886,
+        "mae_usd": 51819.496377988566,
+        "rmse_usd": 81205.09274257488,
+        "p80_absolute_error_usd": 75440.046875,
+        "median_km": 0.11145234597092729
+      },
+      "typical": {
+        "n": 2885,
+        "mae_usd": 53349.61557354853,
+        "rmse_usd": 91319.51281927204,
+        "p80_absolute_error_usd": 72859.80625000002,
+        "median_km": 0.16565201840341334
+      },
+      "sparse": {
+        "n": 2885,
+        "mae_usd": 67487.07496411937,
+        "rmse_usd": 119544.85914895628,
+        "p80_absolute_error_usd": 90632.725,
+        "median_km": 0.2655817099181174
+      }
+    },
+    "held_out_2025_support_audit": {
+      "dense": {
+        "n": 3559,
+        "mae_usd": 54145.079641841105,
+        "rmse_usd": 85131.28585107009,
+        "p80_absolute_error_usd": 76375.56250000001,
+        "median_km": 0.10878360904475373
+      },
+      "typical": {
+        "n": 2669,
+        "mae_usd": 53251.12320640338,
+        "rmse_usd": 89158.94194238314,
+        "p80_absolute_error_usd": 75453.46250000001,
+        "median_km": 0.16350230576015923
+      },
+      "sparse": {
+        "n": 2463,
+        "mae_usd": 69389.57367951938,
+        "rmse_usd": 131553.13162273978,
+        "p80_absolute_error_usd": 94635.09375,
+        "median_km": 0.26891890335863355
+      }
+    },
+    "spearman_validation": 0.09686621063976195,
+    "distance_boundaries_km": [
+      0.13863469715919033,
+      0.19986224083742946
+    ]
+  },
+  "2025_price_brackets": [
+    {
+      "bracket": "<$150k",
+      "n": 1098,
+      "mae_usd": 47425.7451207451,
+      "median_ape_percent": 36.451970616828156
+    },
+    {
+      "bracket": "$150-300k",
+      "n": 3774,
+      "mae_usd": 33867.48835059784,
+      "median_ape_percent": 12.105354938567967
+    },
+    {
+      "bracket": "$300-500k",
+      "n": 2413,
+      "mae_usd": 53204.68615960423,
+      "median_ape_percent": 11.863595028796604
+    },
+    {
+      "bracket": "$500-750k",
+      "n": 884,
+      "mae_usd": 94334.08763433258,
+      "median_ape_percent": 12.623513997795216
+    },
+    {
+      "bracket": "$750k+",
+      "n": 522,
+      "mae_usd": 218529.68564415709,
+      "median_ape_percent": 17.39065927493559
+    }
+  ],
+  "sensitivity": [
+    {
+      "sigma": 1.0,
+      "mean_usd_per_km": 2092.4928309720026,
+      "p95_usd_per_km": 10743.16428555379,
+      "max_usd_per_km": 25049.809841487124
+    },
+    {
+      "sigma": 1.5,
+      "mean_usd_per_km": 1922.4887450507679,
+      "p95_usd_per_km": 10849.060013585286,
+      "max_usd_per_km": 19192.00110899281
+    },
+    {
+      "sigma": 2.5,
+      "mean_usd_per_km": 1690.3658103428043,
+      "p95_usd_per_km": 9159.72521032357,
+      "max_usd_per_km": 12523.18302049226
+    }
+  ],
+  "input_sha256": {
+    "data/official/processed/residential_sales_2013_2025.csv": "54b4258c53497627cccb25ce2ff26f58119edf244901eccbf4bb1b42869d47fd",
+    "artifacts/official/residential-sale-model.joblib": "ce90397fc1d72de317b50847532da865a0e72d6a357f7692171a01743133fe88",
+    "reports/official/training-report.json": "0245406be16ceb99422f908f9f4343f210ea7d79ef106da0ac47b4f36bdd3a0e",
+    "reports/official/geospatial-report.json": "85f91268cca4294048f2f306013ca52cbac03d8a09ffc7cbb35e36ce6b5357cb",
+    "reports/official/reliability-report.json": "4bcb12833774611eb15c1a5a8c1648c4c37be6bc3edd0f19c377df92e3a6a557",
+    "reports/official/price-surface.npz": "9cd60a37a800ba29141ca8230c974a7f4ff4b53636b294120e83c388c9118973"
+  },
+  "library_versions": {
+    "numpy": "2.5.4",
+    "pandas": "2.3.3",
+    "matplotlib": "3.11.2",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "joblib": "1.6.0",
+    "pyproj": "3.6.1"
+  },
+  "caveats": [
+    "2025 observed-sale map uses actual 2025 recorded transactions.",
+    "Numerical gradient map is the derivative of a Gaussian-smoothed fixed-feature scenario produced with the original fitted XGBoost model; not an observed or causal price change.",
+    "Support tier 2024 calibration refits the historical pre-2024 candidate model, whereas 2025 audit uses the original final saved XGBoost model.",
+    "Present-day assessment attributes may postdate historical sales."
+  ]
+}
