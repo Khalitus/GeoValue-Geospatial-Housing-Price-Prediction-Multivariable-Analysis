@@ -1,0 +1,44 @@
+{
+  "source_original_figures_commit": "5519c03a1adac44f7ad5338788739a3715a3a196",
+  "original_model_verified": true,
+  "2025_metrics": {
+    "mae": 58190.784289018455,
+    "rmse": 101555.74481208979,
+    "r2": 0.8411996698339903
+  },
+  "2025_support_audit": {
+    "dense": {
+      "n": 3559,
+      "mae_usd": 54145.079641841105,
+      "rmse_usd": 85131.28585107009,
+      "p80_absolute_error_usd": 76375.56250000001,
+      "median_km": 0.10878360904475373
+    },
+    "typical": {
+      "n": 2669,
+      "mae_usd": 53251.12320640338,
+      "rmse_usd": 89158.94194238314,
+      "p80_absolute_error_usd": 75453.46250000001,
+      "median_km": 0.16350230576015923
+    },
+    "sparse": {
+      "n": 2463,
+      "mae_usd": 69389.57367951938,
+      "rmse_usd": 131553.13162273978,
+      "p80_absolute_error_usd": 94635.09375,
+      "median_km": 0.26891890335863355
+    }
+  },
+  "support_validation_spearman": 0.09686621063976195,
+  "original_model_sha256": "ce90397fc1d72de317b50847532da865a0e72d6a357f7692171a01743133fe88",
+  "input_figure_sha256": {
+    "observed": "5c814ea9239cb36d66d2ce78bdd5e6ae09346f18e56f3431b756833c3312b72b",
+    "gradient": "5bfdbf3f289bc84923b48f58ffb5c11f7bcc7c303719e14fe6bd55883b07dc28",
+    "scatter": "3ff95d6bcfaa91a1e82fe942bd8a7996de7d9abc4580652597da72f476511870",
+    "bracket": "4e0950e82075455b9ff277e0d5934b487d095cb8fc57701201d81a59b1bb8482",
+    "support": "888f68851bf5b518b8afb56095b2bb5b4dc9b39d2168dfe84098fbcf0283f6f2",
+    "sensitivity": "50518ea835864ddb6821fb2952197acc90ea1e062920550977f9c09e53aaf990"
+  },
+  "powerpoint_sha256": "dc85378f7ccdef59beb7109ad13b689d0fe8e8de0da26bb0dfbb062a1c7846f6",
+  "scope": "Retrospective sale-price prediction. The 2024 support calibration uses a pre-2024 fit. The original final model supplies 2025 predictions and the numerical gradient scenario, not causal price changes."
+}
