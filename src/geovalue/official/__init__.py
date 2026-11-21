@@ -1,4 +1,4 @@
-"""Official Allegheny County residential-sale research pipeline (GeoValue Task 6).
+"""Official Allegheny County residential-sale research pipeline (GeoValue).
 
 This package deliberately coexists with the original 1990 California project.
 """

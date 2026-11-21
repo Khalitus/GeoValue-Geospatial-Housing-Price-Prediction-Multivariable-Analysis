@@ -97,5 +97,5 @@ def check_source_files(directory: Path) -> dict[str, Path]:
     directory = Path(directory)
     missing = [file for file in SOURCE_NAMES.values() if not (directory / file).is_file()]
     if missing:
-        raise FileNotFoundError('Missing official sources: ' + ', '.join(missing) + '. See docs/TASK_6.md.')
+        raise FileNotFoundError('Missing official sources: ' + ', '.join(missing) + '. See docs/official/SCHEMA.md.')
     return {key: directory / filename for key, filename in SOURCE_NAMES.items()}

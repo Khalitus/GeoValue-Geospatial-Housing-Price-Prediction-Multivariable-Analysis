@@ -1,101 +1,70 @@
-# GeoValue official-data user guide
+# Local application and command-line reference
 
-This guide covers the local Allegheny County residential-sale application. For the legacy California study, use the older CLI (`geovalue`) and browser route `/legacy`.
+GeoValue is a Python 3.12 research application with a command-line interface and a FastAPI browser. The official Pennsylvania study is served at `/`; the retained California census-area study is available at `/legacy`.
 
 ## Installation
 
-GeoValue requires Python 3.12 and packages listed in `pyproject.toml`. On macOS, if the project files reside on an external SSD, use an internal-drive virtual environment:
-
 ```bash
-uv python install 3.12
-uv venv --python 3.12 "$HOME/.venvs/geovalue"
-source "$HOME/.venvs/geovalue/bin/activate"
-uv pip install --link-mode copy -e ".[ml,geo,web,dev]"
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[ml,geo,web,dev]'
+python -m pytest -q
 ```
 
-Do not copy an old `.venv` directory between computers; each machine should install the dependencies locally. Use `python -m uvicorn` to avoid accidentally launching a different system Python.
+An activated virtual environment is required for consistent Python dependencies. Running Uvicorn as `python -m uvicorn` avoids using a different system Python. The browser uses locally bundled Plotly and does not require an external chart CDN.
 
-## Obtain and validate official data
+## Data and model pipeline
 
 ```bash
 geovalue-official sources
 geovalue-official download
 geovalue-official build
 geovalue-official profile
+geovalue-official train
+geovalue-official analyze
 ```
 
-The download saves official `assessments.csv`, `sales.csv`, `centroids.csv`, and a SHA-256 source manifest under `data/official/raw/`. The builder saves `data/official/processed/residential_sales_2013_2025.csv` and its JSON build report. WPRDC can revise recorded transactions after publication, so keep the retrieval date and hashes from your own download.
+The download retrieves county assessments, recorded sales and parcel centroids and stores a source manifest under `data/official/raw/`. The builder writes the processed CSV to `data/official/processed/residential_sales_2013_2025.csv`. The trainer compares the configured regression architectures and saves its selected pipeline to `artifacts/official/residential-sale-model.joblib`. The analyzer writes numerical and JSON reports under `reports/official/` and browser assets under `public/official/data/`.
 
-## Train and test
+The trained pipeline can be used directly; repeated training is not required for every browser session. The spatial analyzer uses the saved model but separately fits a pre-2024 calibration model for the validation-only spatial-support summaries. The 2025 support audit uses the final model.
 
-```bash
-geovalue-official train \
-  --data data/official/processed/residential_sales_2013_2025.csv \
-  --model-output artifacts/official/residential-sale-model.joblib \
-  --report-output reports/official/training-report.json --seed 42
-python -m pytest -q
-```
-
-The saved model is a trusted fitted pipeline. Linear Regression, Random Forest and XGBoost are compared using 2024 validation RMSE; XGBoost won in the supplied full experiment. The 2025 partition is held out, with repeated parcel IDs excluded across periods.
-
-## Analyze the county scenario and calibrate spatial support
-
-```bash
-geovalue-official audit
-geovalue-official diagnose
-geovalue-official analyze \
-  --data data/official/processed/residential_sales_2013_2025.csv \
-  --model artifacts/official/residential-sale-model.joblib \
-  --training-report reports/official/training-report.json \
-  --grid-size 86 --sigma 1.5 --support-km 4.5
-```
-
-The analysis saves `.npz` numerical arrays and JSON reports under `reports/official`, a spatial-support reference under `artifacts/official`, and browser JSON files under `public/official/data`. It calibrates the spatial evidence tiers on 2024 residuals using an architecture trained on pre-2024 records. The full-data run may require appreciable memory; do not replace it with artificially generated records.
-
-If you retrain the model, **run `analyze` again and restart the browser server**. The support artifact and displayed report must correspond to the same fitted model and input data.
-
-## Launch the local browser
+## Browser
 
 ```bash
 python -m uvicorn app:app --reload
 ```
 
-Navigate to `http://127.0.0.1:8000` on your own computer. The interface includes:
+Open <http://127.0.0.1:8000> for the official study. The application provides an overview of model evaluation, a property estimate form, observed-sale geography, numerical calculus views, and a methodology summary.
 
-- **Overview:** official 2025 test MAE/RMSE/R², algorithm comparison and geographical ablation.
-- **Estimate:** input coordinates, sale year/month, square footage, bedrooms, baths, year built, and optional categorical amenities; the result includes a spatial evidence tier and observed 2024 group errors when prepared.
-- **Geography:** interactive 2025 **held-out** sale observations and predictions, absolute errors, controlled price surface and contours. Clicking a point transfers its location to forms; other property inputs remain unchanged.
-- **Calculus:** supported coordinate selector, directional bearing, magnitude/steepest ascent, and an integral summary.
-- **Method:** scope, evaluation boundaries and model limitations.
+The estimate form takes geographical coordinates, a historical transaction year and month, structural attributes and optional categorical amenities. Its output contains a recorded-sale-price estimate and a nearest-neighbor support category where the reliability artifact exists. The support summary is historical group evidence, not a guarantee about the individual estimate.
 
-The official browser bundles its plotting library locally and does not need an external Plotly CDN. Your local API and files should still be kept private unless you deliberately share them.
+The calculus view evaluates directional derivatives of the supported, smoothed geographical scenario. Results are in nominal USD/km and describe mathematical sensitivity, not appreciation of an actual property.
 
-## Batch prediction
+## Batch inference and diagnostics
 
 ```bash
 geovalue-official predict \
   --model artifacts/official/residential-sale-model.joblib \
   --input data/official/examples/property-inputs.csv \
   --output reports/official/predictions.csv
+
+geovalue-official audit
+geovalue-official diagnose
+geovalue-official model-info
 ```
 
-Batch CSVs must provide the 19 official input fields listed in [SCHEMA.md](SCHEMA.md), but the target (`sale_price`) is **not** part of prediction input. `sale_year` must be within the historical training range; this application does not forecast year 2026 or beyond.
+Batch inputs contain the 19 original predictor fields defined in [SCHEMA.md](SCHEMA.md). They do not contain the sale-price target or derived model features. The audit flags contradictory same-day sale records, while the diagnostic reports extreme Linear Regression validation predictions without modifying the data.
 
-## Spatial evidence interpretation
+## Expected local artifacts
 
-The interface reports the query's distance to its 10th-nearest historical development location (kilometres) and the error observed for its *support category* in 2024. More sparse areas may show higher errors in an empirical audit, but category membership cannot guarantee a particular prediction error. An error percentile from historical groups is **not** a confidence interval.
+| Path | Purpose |
+|---|---|
+| `data/official/raw/source-manifest.json` | Official source IDs, retrieval timestamps and hashes |
+| `reports/official/build-report.json` | Filtering and join counts |
+| `reports/official/training-report.json` | Model selection and test metrics |
+| `artifacts/official/residential-sale-model.joblib` | Saved fitted model and preprocessing pipeline |
+| `reports/official/reliability-report.json` | Spatial-support calibration and 2025 audit |
+| `reports/official/geospatial-report.json` | Supported geographical surface and integral summary |
+| `reports/official/price-surface.npz` | Numerical grid, derivatives and mask |
 
-## Errors and solutions
-
-| Symptom | Meaning | Action |
-|---|---|---|
-| `/api/official/health` says `model_missing` | `artifacts/official/residential-sale-model.joblib` missing | Run official `train` or restore trusted model |
-| Metrics show dashes | Official `training-report.json` not prepared | Run official `train`; check report path |
-| Geography/calculus charts unavailable | Official `analyze` outputs absent | Run `geovalue-official analyze` |
-| Prediction works but spatial evidence unavailable | Reference `.npz`/JSON not generated | Run `analyze`, restart server |
-| API returns HTTP 422 | Invalid property input or unsupported derivative coordinate | Check ranges and use a supported surface location |
-| Browser uses Python 3.14 unexpectedly | Terminal Uvicorn path points at system Python | Launch with `python -m uvicorn app:app --reload` |
-| Prebuilt pyproj wheel missing on Intel Mac | Incompatible installation selection | Keep configured `pyproj==3.6.1` and Python 3.12 |
-| CSV disappeared after replacing project folder | Directory was replaced instead of files merged | Restore local backup, then merge only the update ZIP |
-
-Always keep raw and processed county CSV files, the source manifest, local model, and experimental JSON reports in a **private full backup** (for example, with `python scripts/package_full.py`). They are not part of a regular Git commit.
+Raw datasets, model artifacts and local analytical reports are normally excluded from Git. Joblib artifacts should only be loaded from a trusted source because deserialization can execute code. See [reproducibility](REPRODUCIBILITY.md), [architecture](ARCHITECTURE.md) and [methodology](METHODOLOGY.md).

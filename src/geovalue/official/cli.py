@@ -17,7 +17,7 @@ BUILD_REPORT=Path('reports/official/build-report.json')
 
 
 def parser() -> argparse.ArgumentParser:
-    parent=argparse.ArgumentParser(prog='geovalue-official',description='Official Allegheny County residential sale analysis (Tasks 6–7)')
+    parent=argparse.ArgumentParser(prog='geovalue-official',description='Allegheny County residential sale-price research and spatial analysis')
     sub=parent.add_subparsers(dest='command',required=True)
     sub.add_parser('sources', help='Show the official source pages and verified CKAN resource IDs')
     dl=sub.add_parser('download', help='Download three official WPRDC CSVs (large files)')

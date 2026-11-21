@@ -1,65 +1,42 @@
-# GeoValue Task 7 testing and verification
+# Software and experimental verification
 
-## Automated validation
+GeoValue separates software correctness, original-model verification and empirical predictive validity. Automated tests use small controlled fixtures to check source processing and mathematical behavior; the published model scores refer to a full evaluation on historical county transactions.
 
-The complete code-matched Task 7 source passed **121 pytest tests** in the local audit environment, including all 101 preexisting Task 6 tests. The original Task 6 Mac terminal log also recorded **101 passed**; the Mac must run the 123-test update after installation. CI test totals after a new push are not yet claimed.
+## Automated software checks
+
+| Component | Tested behavior |
+|---|---|
+| County ingestion | Required source fields, parcel normalization, joins and valid-sale filtering |
+| Feature pipeline | Engineered fields, missing values, unknown categories and persisted estimators |
+| Experimental design | Chronology, parcel-disjoint splits, validation selection and geography ablation |
+| Numerical calculus | Projected coordinate round trips, finite differences, mask handling and integration |
+| Spatial evidence | Nearest-neighbor support distances, threshold tiers and historical group errors |
+| Web application | Input validation, API error codes, prediction and gradient responses |
+| Legacy compatibility | California CLI and `/legacy` route |
+
+For the test field \(S(x,y)=2x+3y+100\), the expected partial derivatives are 2 and 3 and the gradient norm is \(\sqrt{13}\). Other fixtures test known numerical integrals, support-mask exclusion, and preservation of parcel IDs during joins.
+
+The completed local run recorded **122 tests passed and one optional real-data test skipped**. A GitHub Actions run against repository commit `0972e19` completed successfully. These results describe their respective code revisions; CI executes again when repository content changes.
 
 ```bash
 python -m pytest -q
 python -m pytest --cov=geovalue --cov-report=term-missing
 ```
 
-Tests exercise source CSV ingestion, parcel-key joins, sale validity, chronological splits, model comparisons, input validation, existing California routes, new official API routes, projection, price surface, known synthetic gradients/integrals, spatial support thresholds, stored calibration artifacts, missing-asset behavior and numerical report exports.
+GitHub CI does not require the original large county CSV files or the private trained model. A successful CI run is therefore a software test, not a claim of independent empirical model replication.
 
-### New Task 7 mathematical checks
+## Saved-model verification
 
-| Test case | Expected property |
-|---|---|
-| Coordinate round-trip | EPSG:4326 → EPSG:26917 → EPSG:4326 recovers location |
-| Nearest-neighbor distances | 2nd-nearest distance matches known numerical geometry |
-| Reliability buckets | Threshold boundaries reproducibly assign support tiers |
-| Synthetic calibration | Group MAE matches known absolute errors; all samples counted |
-| Support artifact | `.npz` contains only numeric arrays and loads with pickle disabled |
-| Plane gradient | For S=2x+3y+100, east derivative equals 2 and gradient magnitude √13 |
-| Surface integration | Scenario numerical quadrature produces a finite supported-region mean |
-| Source conflict audit | Contradictory parcel/date pairs are flagged without data mutation |
-| End-to-end official analysis | Generates genuine test-cohort map, report, surface and support outputs |
-| API behavior | Proper 422/503 errors, model response and projection-based gradient |
-| Backward compatibility | Official UI at `/`, California UI at `/legacy` |
+The original saved XGBoost pipeline was reapplied to all **8,691 parcel-disjoint 2025 observations**. The recomputed metrics (MAE **$58,190.7843**, RMSE **$101,555.7448**, R² **0.84119967**) match the training report to numerical precision. The [verification manifest](../../poster/evidence/original_model_verification.json) records the model and dataset SHA-256 hashes, metrics, cohorts, spatial support and numerical surface summaries.
 
-The repository's CI tests work without county data and without real trained artifacts by using synthetic fixtures. The real official dataset itself is not committed to GitHub.
+The original Joblib artifact is not publicly distributed. The manifest is an internal consistency and provenance record, not a claim of third-party replication with independently acquired original inputs.
 
-## Actual-data integration test
+The raw-data audit identified eight conflicting same-parcel/same-sale-date price groups. They were reported without automatic adjudication. A separate baseline diagnostic traces the unusually high Linear Regression validation RMSE to a large floor-area-ratio extrapolation.
 
-The uploaded official processed CSV containing **82,169** records was inspected and processed with a **separately refitted XGBoost** architecture in the audit environment. The integration generated a valid geographical surface, support-calibration JSON, 2025 point JSON, and transaction conflict audit. It identified **eight** same-parcel/same-day conflicting-price groups. The original saved user-trained XGBoost Joblib file was **not uploaded**; therefore numerical surface/reliability figures from this separate model must not be silently substituted for the author's original model. Run `geovalue-official analyze` with the trusted local Joblib file on the Mac before using the new Task 7 numbers in academic results.
+## Interface verification
 
-The original training report and supplied CSV are an appropriate basis for model-selection and temporal holdout claims; the interactive browser screenshots are *engineering verification*, not substitutes for regression evaluation.
+The local browser was checked at desktop and mobile viewport sizes with navigation, property-form submission, gradient queries, static chart loading and invalid-input behavior. Documentation screenshots illustrate the interface. Some screenshots used a separate engineering fixture; research figures and numerical model claims instead use the [original-model plot set](../../poster/figures/).
 
-## Local browser checks
+## Validity boundaries
 
-Headless Chromium was exercised against a FastAPI TestClient of the committed application source at **1440×900 desktop** and **390×844 mobile**, using inline local chart assets and API responses from the audit environment. This avoids an external CDN or public deployment. Tested navigation, prediction submission, gradient form, valid sample locations, chart rendering, no JavaScript errors and no horizontal overflow. The 2025 chart uses a normal scatter plot to avoid mandatory WebGL; the 3D chart uses a contour fallback when WebGL is unavailable.
-
-The screenshots in `images/` display the **real interface against the uploaded county dataset with the audit environment's separately fitted model**. The summary model metrics shown in the browser were loaded from the uploaded original training report, while point/surface values were derived from the audit model. Screenshots are marked as **UI evidence only**, not an independent model accuracy experiment.
-
-## Scientific limits of testing
-
-- Software unit tests cannot prove real-world model accuracy.
-- A chronological test reduces some leakage, but contemporary assessment features remain potentially post-sale.
-- The municipality holdout is distinct from the 2025 test.
-- The spatial evidence indicator needs its actual 2024/2025 audit to establish whether density correlates with error; the code does not guarantee a confidence interval.
-- Outlier and contradictory-record diagnostics flag issues but do not justify arbitrary data deletion.
-- The local test environment may have different library patch versions than the author's trained model.
-- Source updates after download may alter rows, valid-sale labels, assessment attributes and transaction corrections.
-
-## Optional regression checks on the Mac
-
-After running the official analysis, verify:
-
-```bash
-python -m json.tool reports/official/geospatial-report.json
-python -m json.tool reports/official/reliability-report.json
-python -m json.tool reports/official/transaction-audit.json
-geovalue-official model-info --model artifacts/official/residential-sale-model.joblib
-```
-
-Inspect `validation_error_by_support` and `held_out_2025_support_audit` counts. Tiers must be selected from 2024 data and audited separately on 2025. A sparse location with good predicted performance is not a contradiction; the indicator describes **sample density** and empirical group errors, not deterministic correctness.
+Numerical unit tests do not establish the causal interpretation of geographical price gradients. A chronological, parcel-disjoint design does not remove historical information mismatch from a later assessment snapshot. County-valid sales form a selected set of transfers, and subgroup error comparisons are descriptive. The Spatial Evidence Indicator does not yield calibrated individual prediction intervals. See [feature validity](FEATURE_VALIDITY.md) and [experimental results](EXPERIMENT_RESULTS.md).

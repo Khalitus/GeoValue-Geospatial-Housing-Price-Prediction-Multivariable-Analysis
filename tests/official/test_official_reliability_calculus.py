@@ -1,4 +1,4 @@
-"""Task 7 mathematical tests: support calibration, projections, surfaces and integration."""
+"""Official-data mathematical tests: support calibration, projections, surfaces and integration."""
 import json
 import numpy as np
 import pandas as pd

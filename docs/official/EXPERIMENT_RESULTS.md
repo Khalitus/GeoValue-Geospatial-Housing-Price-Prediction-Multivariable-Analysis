@@ -1,83 +1,114 @@
-# Official property-sale experiment results
+# Experimental results
 
-**Recorded experiment:** User-supplied `training-report.json` generated using WPRDC / Allegheny County transaction, assessment and centroid records. Source download occurred **14 November 2026**; the chosen transaction period ends **31 December 2025**. Do not refer to the assessment snapshot as an as-of-2025 record.
+The findings below refer to recorded residential sales in Allegheny County and the original fitted GeoValue XGBoost pipeline. The source extract was retrieved on **14 November 2026**. The sale period ends on 31 December 2025; its property-assessment fields are from the later extract and are not asserted to be historical snapshots.
 
-## Dataset filtering
+Machine-readable evidence: [original-model verification](../../poster/evidence/original_model_verification.json), [figure-generation code](../../poster/scripts/generate_original_figures.py), and [scientific figures](../../poster/figures/). The verification record contains SHA-256 hashes of the processed dataset, fitted model, training report, numerical surface and reliability report. The private source CSVs and serialized model are not distributed in this repository.
 
-| Audit quantity | Value |
+## Sample construction
+
+| Processing measure | Count |
 |---|---:|
-| Raw recorded sale rows | 508,013 |
-| Rejected invalid or uncertain sale description | 407,162 |
-| Rejected date/price bounds | 9,972 |
-| Eligible sale rows before property/location joins | 90,851 |
-| Residential assessments | 523,752 |
-| Sales matched to assessment | 89,717 |
-| Matched to centroid | 89,711 |
-| Rejected physical/temporal inconsistencies | 7,542 |
-| **Final transactions** | **82,169** |
-| **Unique parcels** | **72,607** |
+| Raw sale records | 508,013 |
+| Sale-description exclusions | 407,162 |
+| Date and price exclusions | 9,972 |
+| Eligible records before joins | 90,851 |
+| Residential assessment records in source | 523,752 |
+| Matched assessment records | 89,717 |
+| Matched parcel centroids | 89,711 |
+| Physical or temporal consistency exclusions | 7,542 |
+| **Eligible transactions after processing** | **82,169** |
+| **Distinct parcels** | **72,607** |
 
-The source tables contain many more parcels than eligible *valid sales*. The final regression count, not the county's total parcel count, is the relevant sample size.
+Twenty-eight exact duplicate sale rows were removed during the source-cleaning sequence before the main eligibility and join accounting. Counts in this table describe successive processing checkpoints; they are **not** independent rejection categories to be added together. The source includes repeated sales of some parcels.
 
-## Chronological evaluation
+## Chronological and parcel-disjoint evaluation
 
-Training-period **2013–2023**: 60,767 records; **2024** validation: 8,656; **2025** held-out test: 8,691. The split excludes **4,055** repeated-parcel observations to avoid parcel identity crossing partitions. The selected architecture is refitted on **69,423** development rows before 2025 testing.
+| Partition | Sale years | Observations |
+|---|---|---:|
+| Training | 2013–2023 | 60,767 |
+| Validation | 2024 | 8,656 |
+| Held-out test | 2025 | 8,691 |
 
-### 2024 validation comparison
+The partitioning procedure excludes 4,055 earlier observations to ensure no parcel identifier appears in more than one partition. The chosen XGBoost architecture is refitted on 69,423 development observations (training plus validation) before evaluation against the 2025 test set. All performance measures use recorded **nominal USD** prices.
 
-| Algorithm | Validation MAE (USD) | Validation RMSE (USD) | Validation R² |
+### 2024 validation model selection
+
+| Candidate model | MAE (USD) | RMSE (USD) | R² |
 |---|---:|---:|---:|
-| Linear Regression | $71,249.66 | $956,526.74 | -14.1316 |
-| Random Forest | $63,044.69 | $111,735.19 | 0.7935 |
-| **XGBoost** | **$57,551.40** | **$98,697.19** | **0.8389** |
+| Linear Regression | 71,249.66 | 956,526.74 | -14.1316 |
+| Random Forest | 63,044.69 | 111,735.19 | 0.7935 |
+| **XGBoost** | **57,551.40** | **98,697.19** | **0.8389** |
 
-The unregularized linear model has an extreme RMSE outlier; it should not be treated as a typical predictor. The `diagnose` command provides a reproducible validation-only anomaly report. This comparison is **not** a claim of globally optimal hyperparameters.
+The very large Linear Regression RMSE reflects an unstable extrapolation associated with an anomalous floor-area ratio. The comparison is among the specified candidate configurations, not a global algorithm search. The original training procedure selected XGBoost by **validation RMSE**, without consulting 2025 test targets.
 
 ### 2025 held-out test
 
-| Metric | Value |
-|---|---:|
-| Selected architecture | XGBoost |
-| MAE | **$58,190.78** |
-| RMSE | **$101,555.74** |
-| R² | **0.84120** |
-
-Errors are nominal US dollars, not inflation-adjusted. The model predicts recorded residential sale prices, not current asking prices.
-
-## Geographical-feature ablation
-
-Using the selected XGBoost model and unchanged 2024 validation partition:
-
-| Condition | RMSE (USD) | R² |
+| Metric | Reported | Recomputed from saved XGBoost model |
 |---|---:|---:|
-| With longitude, latitude, municipality and ZIP | $98,697.19 | 0.83890 |
-| Without those four location variables | $116,653.97 | 0.77494 |
+| Observations | 8,691 | 8,691 |
+| MAE (USD) | 58,190.78 | 58,190.7843 |
+| RMSE (USD) | 101,555.74 | 101,555.7448 |
+| R² | 0.84120 | 0.84119967 |
 
-**RMSE difference:** $17,956.78, or approximately **15.39%** relative to the no-geography model. This is a descriptive feature-ablation result; it does **not** identify causal effects of location.
+The recomputed results agree with the original training report to numerical precision. This establishes internal artifact consistency; public reproduction remains limited by the fact that the fitted model and underlying private data files are not hosted in GitHub.
 
-## Municipality generalization experiment
+## Contribution of geographical features
 
-A separate *pre-2024* municipality holdout yielded **MAE $49,961.24**, **RMSE $95,885.20**, and **R² 0.76503** across **14,259** held-out records. This is not a future-2025 test and is not the same comparison as the chronological test above.
+| XGBoost configuration | 2024 validation RMSE (USD) | R² |
+|---|---:|---:|
+| With longitude, latitude, municipality and ZIP | 98,697.19 | 0.83890 |
+| Without these four fields | 116,653.97 | 0.77494 |
 
-## Spatial Evidence Indicator (Task 7)
+The observed RMSE reduction is **$17,956.78**, or **15.39% relative to the model without geographic inputs**. This experiment measures predictive association, not the causal value of changing a property's location.
 
-The Task 7 code calibrates support tiers on 2024 validation data and independently audits 2025 test error across the same distance boundaries. The authoritative new results are written to:
+A separate municipality holdout among pre-2024 observations assessed the model's transfer to municipalities excluded from that experiment's fitting sample: **14,259 observations**, MAE **$49,961.24**, RMSE **$95,885.20**, R² **0.76503**. Its population and split design differ from the chronological 2025 test; the metrics are not interchangeable.
 
-- `reports/official/reliability-report.json`
-- `reports/official/geospatial-report.json`
-- `reports/official/transaction-audit.json`
+## Spatial Evidence Indicator
 
-The attached user files do **not** yet contain the author's Task 7 analysis outputs. Therefore this document deliberately does not claim specific final density thresholds, tier-wise errors or calculus integral values. They should be recorded after `geovalue-official analyze` is run with the trusted, previously trained model on the developer's Mac.
+The **2024 calibration** computes ten-nearest-location support distances and error summaries using a model trained on pre-2024 observations. The **2025 audit** uses the saved final XGBoost pipeline, with the previously defined distance thresholds. The two model identities are deliberately distinct.
 
-A developer **reproduction check** using the uploaded 82,169-row file and a freshly fitted XGBoost architecture (under different installed library versions) generated 8,656 calibration observations and 6,117 supported surface grid nodes, but those figures are verification evidence, *not a substitute for the author's original saved-model report*.
+| Geographical support | 2024 records | 2024 MAE (USD) | 2025 records | 2025 MAE (USD) | 2025 RMSE (USD) |
+|---|---:|---:|---:|---:|---:|
+| Dense | 2,886 | 51,819.50 | 3,559 | 54,145.08 | 85,131.29 |
+| Typical | 2,885 | 53,349.62 | 2,669 | 53,251.12 | 89,158.94 |
+| Sparse | 2,885 | 67,487.07 | 2,463 | 69,389.57 | 131,553.13 |
 
-## Important limitations
+The 2025 sparse-minus-dense MAE difference is **$15,244.49** (28.16% of the dense MAE). The 2024 distance-error Spearman correlation is **ρ = 0.09687**, a weak individual association. The dense and typical groups have similar audit errors. The support categories should therefore be interpreted as **descriptive sample coverage**, not as monotonic individual uncertainty estimates or calibrated prediction intervals.
 
-1. Assessment attributes are a newer property snapshot and may reflect changes made after the historical sale date. The chrono split does not eliminate this temporal information mismatch.
-2. Repeated sales of one parcel are removed across partitions, but the presence of transaction corrections or multiple instruments within a day remains a data-quality issue.
-3. County-valid recorded sales are a selected sample of all properties and all transfers.
-4. Rare categories, extreme property ratios and luxury transactions can challenge especially the linear baseline.
-5. Geographic support does not guarantee low error; the indicator is not a confidence interval.
-6. The modeled spatial surface fixes non-location features, including location-dependent categories; its integral is over grid-supported cells rather than Allegheny County's land boundary.
+The 2024 distance-tercile boundaries were **0.13863 km** and **0.19986 km**. The 80th percentile of 2025 absolute errors was **$76,375.56** in dense areas and **$94,635.09** in sparse areas. These are group summaries; they do not provide coverage probabilities for a new property.
 
-See [Methodology](METHODOLOGY.md) and [Testing](TESTING.md).
+## Error by recorded sale-price bracket
+
+| 2025 recorded price | Records | MAE (USD) | Median absolute percentage error |
+|---|---:|---:|---:|
+| Below $150,000 | 1,098 | 47,425.75 | 36.45% |
+| $150,000–$299,999 | 3,774 | 33,867.49 | 12.11% |
+| $300,000–$499,999 | 2,413 | 53,204.69 | 11.86% |
+| $500,000–$749,999 | 884 | 94,334.09 | 12.62% |
+| $750,000 and above | 522 | 218,529.69 | 17.39% |
+
+Lower-priced sales exhibit the largest median proportional errors; high-priced sales have the largest mean dollar errors. These are **absolute**, not signed, residual statistics. Systematic over- or underprediction has not been established by the published table.
+
+## Numerical geographical scenario
+
+| Parameter or result | Value |
+|---|---:|
+| Projection | NAD83 / UTM zone 17N (EPSG:26917) |
+| Candidate grid | 86 × 86 |
+| Supported grid nodes | 6,117 |
+| Gaussian smoothing | σ = 1.5 grid cells |
+| Maximum support distance | 4.5 km |
+| Integration cells | 5,945 |
+| Supported computational area | 2,331.44 km² |
+| Area integral | 533,507,923.29 USD·km² |
+| Area-weighted scenario mean | 228,831.68 USD |
+
+The integrated region is a data-supported numerical grid, not Allegheny County's official boundary. The area-weighted mean is a **model scenario statistic**, not the observed county sale-price mean or a sum of property values. A strong vertical gradient band is present under the fixed-reference scenario; its geographical stability has not been established under coherent category assignments and multiple reference-property profiles.
+
+The mean modeled gradient magnitude changes with smoothing: **$2,092.49/km at σ = 1.0**, **$1,922.49/km at σ = 1.5** and **$1,690.37/km at σ = 2.5**. These figures quantify numerical sensitivity, not causal geographical price appreciation.
+
+## Data-quality and validity notes
+
+Eight parcel-and-sale-day groups containing contradictory prices were identified by an audit. The source records were flagged without automatically selecting a preferred price. The assessment snapshot may contain post-sale changes to floor area, rooms, conditions or amenities. The evaluation also uses nominal transaction prices across years. These constraints limit interpretation as historical point-in-time or prospective valuation.
+
+See [feature timing and validity](FEATURE_VALIDITY.md), [methodology](METHODOLOGY.md) and [figure provenance](FIGURES.md).

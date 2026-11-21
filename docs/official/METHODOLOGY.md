@@ -1,4 +1,4 @@
-# Official residential-sale methodology and applied spatial calculus
+# Residential sale-price modeling and spatial calculus methodology
 
 ## 1. Research object and temporal scope
 
@@ -72,11 +72,11 @@ R^2=1-\frac{\sum_i(y_i-\hat y_i)^2}{\sum_i(y_i-\bar y)^2}
 
 ### Observed outcomes
 
-XGBoost had the lowest validation RMSE ($98,697.19) and reached 2025 test **MAE $58,190.78**, **RMSE $101,555.74**, **R² 0.84120**. Excluding location variables (latitude, longitude, municipality, ZIP) increased validation RMSE to $116,653.97, a reduction of $17,956.78 when geography was retained. These values are sourced from the user's actual full model-training report. A causal interpretation is not supported.
+XGBoost had the lowest validation RMSE ($98,697.19) and reached 2025 test **MAE $58,190.78**, **RMSE $101,555.74**, **R² 0.84120**. Excluding location variables (latitude, longitude, municipality, ZIP) increased validation RMSE to $116,653.97, a reduction of $17,956.78 when geography was retained. These results come from the original full-data training report and were verified against the saved selected pipeline. They are predictive associations, not causal effects.
 
-## 4. Small methodological contribution: spatial evidence and validation error
+## 4. Spatial Evidence Indicator and validation error
 
-### Research gap in the delivered application
+### Research motivation
 
 A single point estimate does not explain whether the proposed property location has many nearby *development* observations, or how the model performed in locations with similar geographical support during validation. GeoValue adds a **spatial evidence indicator**. It is an auditable descriptive support layer, **not** a calibrated probability, a confidence interval or an individual prediction-error guarantee.
 
@@ -111,7 +111,7 @@ For predictions from the **final** model, distances are computed against the exp
 
 Finally, the already fixed 2024 boundaries are applied to a **separate 2025 support audit**, using the final refitted model's 2025 residuals. The 2025 audit measures whether the stratification remains informative without tuning the cutoffs from test targets. No 2025 observations enter the training-location support set.
 
-This modest, measurable addition is GeoValue's proposed **incremental novelty**, rather than a claim of inventing uncertainty estimation.
+This is an application-level research contribution that combines local sampling evidence and held-out error diagnostics. It does not introduce a new uncertainty estimator.
 
 ## 5. County-projected geographical surface
 
@@ -170,4 +170,4 @@ The integral has units **nominal USD·km²**; the area-weighted mean is in USD. 
 - **Geometry and smoothing:** projection, grid size, support radius and Gaussian bandwidth affect the calculus results; no official county polygon is used for area integration.
 - **Generalization:** separate municipal holdout covers distinct municipalities in pre-2024 data, but not unseen future markets or neighboring counties.
 
-For practical commands and artifact paths see [Task 7](../TASK_7.md). For audit and test results see [Testing](TESTING.md) and [Experiment results](EXPERIMENT_RESULTS.md).
+For implementation commands see [the application guide](USER_GUIDE.md). The measured spatial-support and calculus results are in [experimental results](EXPERIMENT_RESULTS.md); test methods are in [testing](TESTING.md).

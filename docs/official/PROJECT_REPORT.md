@@ -1,103 +1,85 @@
-# GeoValue: Geospatial Residential Sale-Price Prediction and Spatial Evidence Using Machine Learning and Multivariable Calculus
-
-**Final extension report · University MVC project · Local Python implementation**
+# GeoValue: Retrospective Sale-Price Prediction and Spatial Sensitivity Analysis
 
 ## Abstract
 
-GeoValue analyzes recorded residential property sales in Allegheny County, Pennsylvania using official county property assessments, sale transactions and parcel-centroid records. A reproducible source filtering and parcel-join procedure yielded **82,169 eligible sale transactions**, representing **72,607 unique parcels** from **2013 through 2025**. A supervised regression pipeline uses property structure, transaction date and geography to compare Linear Regression, Random Forest and XGBoost. The evaluation maintains parcel separation across chronological splits, selecting the model on 2024 validation RMSE and evaluating it on an untouched 2025 test cohort. XGBoost achieved 2025 **MAE $58,190.78**, **RMSE $101,555.74**, and **R² 0.84120**. Geographic information reduced validation RMSE by **$17,956.78** relative to a model excluding location features.
+GeoValue investigates recorded residential sale prices in Allegheny County, Pennsylvania, using a combination of official transaction data, a later property-assessment extract and parcel centroids. Eligibility filtering and parcel-key joins produced **82,169 transactions associated with 72,607 parcels** from 2013–2025. A supervised modeling pipeline compares Linear Regression, Random Forest and XGBoost, using 2024 validation data for model selection and a parcel-disjoint 2025 cohort for evaluation. The selected XGBoost pipeline achieved **MAE $58,190.78**, **RMSE $101,555.74** and **R² 0.8412** on 8,691 held-out transactions. In a separate validation ablation, geographical features reduced RMSE by 15.39% compared with the same model configuration without geographical inputs.
 
-The project's incremental contribution is a **Spatial Evidence Indicator**: nearest-training-location support strata, calibrated against actual 2024 validation errors and audited separately using 2025 residuals. The application also constructs a controlled, Gaussian-smoothed geographical scenario in a kilometre-based coordinate system for numerical partial derivatives, directional derivatives, contour curves and double integration. Its gradient and integral results describe this mathematical scenario, not causal property value change. The implemented CLI, locally served GUI and automated tests support reproducible research; the system is not an appraisal or a real-time market forecasting platform.
+A supplementary Spatial Evidence Indicator describes the density of development observations near a prediction location. Support tiers are defined using 2024 validation distances and compared against a separate 2025 audit. The sparse-support cohort had a mean absolute error of $69,389.57, compared with $54,145.08 in the dense-support cohort. The association between support distance and individual validation error was weak (Spearman ρ = 0.09687), and the indicator is not a confidence interval. The project further evaluates a Gaussian-smoothed, fixed-property geographical scenario using partial derivatives, directional derivatives and numerical double integration. Those derivatives describe the model's constructed field, not observed price appreciation or causal effects. The application provides a local command-line interface, analytical API and browser dashboard. Since its property-characteristic extract postdates many transactions, its evaluation is retrospective rather than a validated point-in-time forecast.
 
-**Keywords:** official property data; XGBoost; geospatial regression; support density; validation error; numerical gradient; multivariable calculus; area integration.
+**Keywords:** residential sale prices; hedonic characteristics; XGBoost; geospatial regression; gradient field; spatial evidence; numerical integration; retrospective evaluation.
 
-## 1. Research motivation and questions
+## 1. Problem and research questions
 
-Most regression dashboards display a point estimate without explaining how densely the proposed location is represented among development observations. GeoValue connects three course-relevant tasks: property-level supervised regression, explicit geographical generalization evaluation and mathematical analysis of a controlled spatial scenario. Its research questions are (1) which of three specified regression architectures best predicts eligible 2025 recorded sales, (2) how much location-related information contributes to holdout accuracy, and (3) whether a local-support statistic is associated with observed validation errors while enabling interpretable spatial gradients and integration.
+Residential property prices vary with building characteristics, recorded sale conditions and location. Regression models can summarize these relationships as point predictions, but a single estimate gives limited information about variation in the model's geographical response or the distribution of nearby training records. GeoValue examines three connected questions:
 
-## 2. Official data sources and filtering
+1. How do specified regression models perform on parcel-disjoint, later-year sales?
+2. How much do geographical inputs contribute to validation accuracy and transfer across municipalities?
+3. What do numerical spatial derivatives and training-location support reveal about a controlled model scenario and its observed errors?
 
-Data come from the [Western Pennsylvania Regional Data Center](https://data.wprdc.org/): Allegheny County property assessments, recorded real-estate sales and March 2025 parcel centroids. County sources may be revised; a SHA-256 manifest records the actual download timestamp and resource identifiers. Parcel IDs are string-normalized before joining; leading zeroes are preserved.
+The analysis is constrained to eligible recorded sales from Allegheny County and does not infer causal changes from moving a property. It extends established methods by integrating prediction, supported numerical analysis and descriptive local evidence in one reproducible research workflow.
 
-Among **508,013 raw sale records**, the program excluded **407,162** entries without an explicit county-valid sale description and **9,972** by date/price filters. Valid residential property and centroid joins followed by physical-data screening yielded **82,169** transactions. The processed file has 19 base predictors, parcel/date metadata and the target `sale_price`. Property attributes include bedrooms, baths, finished floor area, lot area, age, condition and construction grade; location includes latitude, longitude, municipality and ZIP. The target is recorded **nominal-dollar** sale price.
+## 2. Data and sampling
 
-**Data challenge:** the assessment snapshot may reflect changes occurring after older sale transactions. This temporal information limitation remains even when the model is evaluated chronologically; do not describe the model as a prospective point-in-time forecast. The program also flags **eight** conflicting same-parcel/same-date price groups without asserting which recorded amount is authoritative.
+The data were retrieved through the Western Pennsylvania Regional Data Center on **14 November 2026**. The sources comprise recorded sales, current assessments and parcel centroids. The source identifiers, eligibility rules and processed input schema are documented in [SCHEMA.md](SCHEMA.md) and [REFERENCES.md](REFERENCES.md).
 
-## 3. Model construction and validation
+Starting from **508,013 recorded sale rows**, the build restricts county sale descriptions to `VALID SALE`, applies configured date and price criteria, joins parcel attributes and centroid positions, and rejects implausible or temporally inconsistent structural fields. The resulting research dataset contains **82,169 eligible transactions** and **72,607 distinct parcels**. The transaction is the unit of prediction; a parcel can appear in more than one sale record. Sale price is the nominal-dollar target. Assessment valuations and previous sale prices are excluded from the predictor set.
 
-A scikit-learn Pipeline creates `property_age_at_sale`, `bathroom_equivalents` and `floor_area_ratio`, fits numerical median imputation/scaling and categorical most-frequent imputation/one-hot encoding, and applies a regression estimator. The split is parcel-disjoint: 2013–2023 training (**60,767**), 2024 validation (**8,656**) and 2025 test (**8,691**). The selected model is refitted on **69,423** development observations, then evaluated once on the test cohort.
+The assessment file represents a **November 2026 property snapshot**, not a historical record of each property as it existed on every sale date. Renovations, subdivision or reassessment may affect what characteristics the records attach to older sales. This feature-timing issue is central to the interpretation of all evaluation metrics, as examined in [FEATURE_VALIDITY.md](FEATURE_VALIDITY.md).
 
-| Algorithm | 2024 validation RMSE (USD) | R² |
+## 3. Modeling framework
+
+Fourteen numerical features represent coordinates, property size, room and bathroom counts, construction vintage, amenities and transaction timing. Five categorical fields represent construction grade, condition, heating/cooling, municipality and ZIP code. A fitted feature transformer adds property age at sale, bathroom equivalents and floor-area ratio. Preprocessing uses numerical median imputation and scaling, categorical most-frequent imputation, and one-hot encoding. The entire transformation is fitted only on the relevant training partition.
+
+The chronological evaluation is parcel-disjoint: **60,767 observations from 2013–2023** form the training set, **8,656 observations from 2024** form validation, and **8,691 observations from 2025** form the test set. Excluding 4,055 earlier repeat-sale observations avoids parcel identity crossing these partitions. Model selection minimizes validation RMSE; the selected architecture is then refitted on 69,423 development observations. The held-out 2025 targets do not choose the model.
+
+| Candidate | 2024 validation RMSE (USD) | Validation R² |
 |---|---:|---:|
-| Linear Regression | $956,526.74 | -14.1316 |
-| Random Forest | $111,735.19 | 0.7935 |
-| **XGBoost** | **$98,697.19** | **0.8389** |
+| Linear Regression | 956,526.74 | -14.1316 |
+| Random Forest | 111,735.19 | 0.7935 |
+| **XGBoost** | **98,697.19** | **0.8389** |
 
-Extreme Linear Regression extrapolation dominated its 2024 RMSE. A diagnostic on the uploaded processed data found a very small recorded lot size and correspondingly large unbounded floor-area ratio. This is evidence of baseline instability, not a reason to delete legitimate county records without a documented rule.
+The Linear Regression baseline is sensitive to an extreme floor-area-ratio observation and produces a very large error. The study preserves that diagnostic rather than silently removing observations to improve the baseline score. XGBoost uses squared-error regression, 220 trees, depth six, learning rate 0.06, observation subsampling and histogram split selection. The comparison does not establish that these hyperparameters or this algorithm are globally optimal.
 
-**XGBoost test results:** MAE $58,190.78; RMSE $101,555.74; R² 0.84120. An ablation excluding four geography variables increased 2024 validation RMSE from $98,697.19 to $116,653.97 (approximately **15.39%** lower RMSE with geography). A separate pre-2024 municipality holdout achieved R² 0.76503 on 14,259 records. These experiments are descriptive associations, not causal results and not future-2026 performance forecasts.
+## 4. Prediction and geographic generalization
 
-## 4. Spatial evidence: the incremental novelty
+The selected XGBoost model achieved **R² 0.84119967**, **MAE $58,190.78** and **RMSE $101,555.74** on the untouched 2025 cohort. Its saved pipeline was subsequently applied again to the same partition; the metrics matched the original training report to numerical precision. The verification and file hashes are published in [poster/evidence/original_model_verification.json](../../poster/evidence/original_model_verification.json).
 
-The new indicator addresses the interpretability gap between a single prediction and the availability of geographically nearby training data. All locations are projected to EPSG:26917, converted to kilometres, and indexed with `cKDTree`. Each 2024 validation location is assigned a distance to its 10th-nearest *pre-2024 training location*. The first and second terciles of this distance define **dense, typical and sparse** support categories.
+Excluding longitude, latitude, municipality and ZIP code increased 2024 validation RMSE from $98,697.19 to $116,653.97. The $17,956.78 difference corresponds to a **15.39% reduction** relative to the no-geography condition. A separate municipality holdout conducted among pre-2024 transactions yielded **R² 0.76503** on 14,259 records. The experimental populations and temporal structures differ; these outcomes cannot be interpreted as direct evidence of future-market forecasting.
 
-Within each validation category, the program computes the actual 2024 MAE, RMSE, median distance and 80th percentile absolute error of a model trained before 2024. The same previously fixed distance thresholds are then evaluated on the 2025 held-out cohort to check whether the observed error relationship transfers to future recorded sales. Neither test errors nor their locations set the thresholds. A user prediction displays the distance, its category, the 2024 group MAE and its historical error percentile. These are **not** confidence intervals; they characterize representation and validation outcomes, not individual guarantees.
+Errors vary across sale-price segments. In the below-$150,000 group, the median absolute percentage error was **36.45%**, whereas transactions at or above $750,000 had a mean absolute error of **$218,529.69**. Absolute errors do not establish the direction of bias. [EXPERIMENT_RESULTS.md](EXPERIMENT_RESULTS.md) reports all five sale-price groups and sample sizes.
 
-The genuine novelty is **the measured, reproducible connection** between local spatial support and historical model error in the same application that provides model-based geographical calculus. It is an incremental methodological integration of established approaches, not a new estimator.
+## 5. Spatial Evidence Indicator
 
-The author's post-upgrade report must be generated with `geovalue-official analyze` on the saved trusted model before quoting the precise distance cutoffs and groupwise errors. The original submitted Task 6 training report alone does not contain those Task 7 numbers.
+For a location in projected kilometre coordinates, the indicator measures distance to its **tenth-nearest development-location record**. Two tercile thresholds of the 2024 validation distance distribution define dense, typical and sparse sample-coverage categories. A pre-2024 historical calibration model produces validation residual summaries within those categories, including MAE, RMSE and 80th-percentile absolute error. The final saved XGBoost model is audited separately against the 2025 held-out outcomes using the previously established thresholds.
 
-## 5. Applied multivariable calculus
+| Tier | 2025 observations | Original-model MAE (USD) |
+|---|---:|---:|
+| Dense | 3,559 | 54,145.08 |
+| Typical | 2,669 | 53,251.12 |
+| Sparse | 2,463 | 69,389.57 |
 
-Write the fitted model as \(f(x,y,\mathbf z)\), where \((x,y)\) are geographical coordinates and \(\mathbf z\) are non-location characteristics. Fix \(\mathbf z=\mathbf z_0\), set the scenario transaction year to **2025**, and define \(P(x,y)=f(x,y,\mathbf z_0)\). The implementation transforms positions from longitude/latitude into NAD83 / UTM zone 17N (EPSG:26917), in kilometres, and samples an **86×86** geographical grid.
+The sparse-minus-dense difference was **$15,244.49**, approximately 28.2% of dense MAE. The validation Spearman coefficient between tenth-neighbor distance and absolute error was only **0.09687**. The comparison is a group-level diagnostic rather than a calibrated individual prediction interval. A composition-adjusted or geographically clustered uncertainty estimate has not been established by the published original-model evidence.
 
-Since the XGBoost ensemble is piecewise constant, direct geographical derivatives are not informative. A Gaussian-smoothed, support-masked scenario \(S(x,y)\) is formed. Only nodes within **4.5 km** of an observed property location are retained. Numerical central differences compute:
+## 6. Multivariable calculus and geographical scenarios
 
-\[
-\nabla S=(S_x,S_y),\qquad \|\nabla S\|=\sqrt{S_x^2+S_y^2},\qquad D_\theta S=S_x\sin\theta+S_y\cos\theta.
-\]
+Let a trained price predictor be written as \(f(x,y,\mathbf{z})\), where \((x,y)\) denotes location and \(\mathbf{z}\) represents other predictors. Fixed reference features \(\mathbf{z}_0\) define a two-dimensional model scenario \(P(x,y)=f(x,y,\mathbf{z}_0)\). Coordinates are transformed to **EPSG:26917** and converted from metres to kilometres before sampling an 86×86 grid. Only nodes within 4.5 km of an observed parcel position are supported.
 
-Bearing \(\theta\) is clockwise from **projected grid north**. Gradient units are nominal USD/km. The double integral accumulates the smoothed surface across fully supported grid cells:
+The tree ensemble is piecewise constant. Therefore, a masked Gaussian-smoothed surface \(S(x,y)\) is used for finite-difference calculus. The spatial gradient is \(\nabla S=(\partial S/\partial x,\partial S/\partial y)\), expressed in **nominal USD/km**. The directional derivative is the gradient's dot product with a unit projected direction. The double integral approximates \(\iint_D S\,dA\) over valid computational grid cells, and division by the supported area yields an area-weighted scenario mean.
 
-\[
-I=\iint_D S(x,y)\,dA, \quad \bar S_D=\frac{I}{\iint_D dA}.
-\]
+The original-model analysis identified **6,117 supported grid nodes**, **5,945 integration cells** and an area-weighted modeled scenario mean of **$228,831.68**. None of these quantities represents total property wealth or the observed county sale-price mean. The location of strong gradient bands depends on choices such as smoothing and on fixing municipality and ZIP while coordinates move. At Gaussian σ=1.0, the mean magnitude was approximately **$2,092.49/km**, compared with **$1,690.37/km** at σ=2.5. Stability under multiple geographically coherent reference profiles has not been established.
 
-The implementation uses four-corner cell quadrature, producing a nominal USD·km² integral and an area-weighted scenario mean in USD. The computational domain is **not** the official Allegheny County administrative land boundary, and its integral is **not** the total market value of properties.
+## 7. Software and reproducibility
 
-## 6. System implementation and verification
+The `geovalue-official` CLI exposes source retrieval, dataset construction, profiling, model training, prediction, outlier/transaction diagnostics and spatial analysis. FastAPI provides validated property and gradient endpoints. The primary browser interface uses locally bundled Plotly and includes overview, estimate, geography, calculus and methodology views. The California census-area study remains available separately under `/legacy`.
 
-The code separates official source downloads, data joins, feature/model pipelines, chronology, geography, spatial-support calibration, and API presentation. The `geovalue-official` CLI can download/build/train/analyze independently of the GUI. FastAPI serves the new primary dashboard locally at `/`; the California original remains at `/legacy`. Plotly is bundled locally, with 2D fallbacks for WebGL-limited systems.
+Automated tests cover data validation and joins, split isolation, preprocessing, numerical finite differences and integration, support calibration and HTTP behavior. GitHub Actions tests are designed to run without county raw CSVs or a saved trained model, using controlled synthetic fixtures. The empirical results above come instead from full official-data evaluation and the original saved-model verification. See [TESTING.md](TESTING.md) and [REPRODUCIBILITY.md](REPRODUCIBILITY.md).
 
-The Task 7 code-matched local test suite passed **123** tests, including numerical reference checks for projection and gradients, 2024 support calibration, end-to-end analytical outputs and API error behavior. The real uploaded processed dataset was also run through a separate local-model reconstruction; screenshot figures reflect that test harness and must not be mistaken for exact numerical results from the author's saved model.
+## 8. Limitations and conclusions
 
-![GeoValue official dashboard preview](images/overview-desktop.png)
+GeoValue provides a documented association study across recorded property-sale prices and a controlled spatial interpretation layer. The assessment data may postdate transactions, and the evaluation does not establish performance under true historical information availability. Sale prices were not inflation-adjusted; county-valid sales are a selected sample. Local sample density does not provide calibrated individual error bounds, and the numerical surface holds some geographically dependent categorical features constant. The integration domain is a supported grid rather than the legal county boundary.
 
-*Figure 1. Browser functionality preview using the processed official data and an audit-environment refit. The performance summary displayed comes from the user's original full training report; visualizations are UI evidence only.*
+Under these constraints, the principal conclusion is that geographical features materially contributed to retrospective validation performance, XGBoost had the lowest RMSE among the tested architectures, and sparse training-location coverage corresponded to higher groupwise 2025 errors. The spatial surface permits numerical MVC analysis but cannot support claims about causal price changes.
 
-## 7. Limitations and future work
+## References
 
-1. Historical assessment snapshot leakage and potentially missing point-in-time features.
-2. Explicit valid-sale filtering selects a subset of all property transactions.
-3. No inflation adjustment across 2013–2025.
-4. Extreme rare property ratios and unregularized linear model instability.
-5. The spatial-support indicator may not be monotonic in observed errors; it is not an uncertainty guarantee.
-6. The geographical surface fixes municipality/ZIP categories while varying position, and therefore may contain unrealistic feature-location combinations.
-7. Numerical integration domain is a support mask, not an official county polygon.
-8. The system has no model-based uncertainty interval, external appraisal validation or prospective 2026+ sale study.
-
-Future extensions could use historical assessment snapshots, heteroskedastic conformal calibration with validated coverage, spatial-block holdout, official county polygon quadrature, and robust regression with carefully evaluated floor-area-ratio handling. These are **not** claims about the delivered functionality.
-
-## 8. Conclusion
-
-GeoValue now meets the instructor's two expanded requirements: it uses a documented, official large property-sale dataset with actual house and location characteristics, and it introduces an incremental, testable spatial evidence contribution. The full XGBoost model obtained a held-out 2025 R² of **0.84120**; the novelty and calculus are integrated into a local browser and CLI without claiming market causality or guaranteed prediction confidence. Final surface and support-audit numerical values must be cited from the local Task 7 outputs generated using the original saved model.
-
-## References and source-of-record files
-
-- [WPRDC Property Assessments](https://data.wprdc.org/dataset/property-assessments)
-- [WPRDC Real Estate Sales](https://data.wprdc.org/dataset/real-estate-sales)
-- [WPRDC Parcel Centroids, March 2025](https://data.wprdc.org/dataset/parcel-centroids-in-allegheny-county-with-geographic-identifiers)
-- [EPSG:26917](https://epsg.io/26917)
-- Official training evidence: `reports/official/training-report.json` (from user's uploaded full-data run)
-- Data audit: `reports/official/build-report.json`; local source manifest in `data/official/raw/source-manifest.json`
-- New Task 7 evidence: `reports/official/reliability-report.json`, `reports/official/geospatial-report.json`, `reports/official/transaction-audit.json`
-- Mathematical and testing specifications: [METHODOLOGY.md](METHODOLOGY.md), [TESTING.md](TESTING.md)
+[Official data and scholarly references](REFERENCES.md) · [Data and model schema](SCHEMA.md) · [Experimental results](EXPERIMENT_RESULTS.md)

@@ -1,4 +1,4 @@
-"""Vercel-recognized ASGI entry point and local uvicorn entry point."""
+"""ASGI application entry point for the local FastAPI service."""
 from geovalue.web import app
 
 __all__ = ["app"]

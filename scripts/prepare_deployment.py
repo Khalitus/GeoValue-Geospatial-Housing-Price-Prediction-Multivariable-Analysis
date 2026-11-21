@@ -1,7 +1,6 @@
-"""Export the user's local trusted model, dataset, and Task 3 surface for Vercel.
+"""Export compatible historical California study assets from local model artifacts.
 
-Run locally after `geovalue train` and `geovalue analyze`.
-Does not retrain or modify the original CSV/model/reports.
+Inputs are read without retraining or modifying the underlying datasets and models.
 """
 from __future__ import annotations
 

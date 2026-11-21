@@ -1,4 +1,4 @@
-# GeoValue official-data system architecture
+# System architecture
 
 ## Scope
 
@@ -65,7 +65,7 @@ public/official/data/
   reliability-report.json             # display copy
 ```
 
-The model is never trained by an HTTP request. Real-data reports are generated from local commands. Generated outputs are excluded from regular Git staging. **Only source files, tests, documentation, and the bundled static chart library are committed.**
+The model is never trained by an HTTP request. Raw source CSVs, the trusted trained model and intermediate analytical outputs remain local. The repository includes source code, tests, documentation, the bundled frontend chart library and publication-ready figures with an evidence manifest.
 
 ## API boundaries
 
@@ -76,7 +76,7 @@ The model is never trained by an HTTP request. Real-data reports are generated f
 - `POST /api/official/gradient` — nearest finite official projected derivative sample.
 - `GET /official/data/{filename}` — strict allowlist for browser JSON files.
 
-FastAPI/Pydantic validate required ranges and return HTTP 422 for invalid input; missing trusted models or artifacts return 503. The web app **does not** accept user-submitted serialized models. All files are local; no database, web scraper or Vercel deployment is required.
+FastAPI/Pydantic validate required ranges and return HTTP 422 for invalid input; missing trusted models or artifacts return 503. The web app **does not** accept user-submitted serialized models. The application operates locally and does not require a database, remote model-training service or cloud deployment.
 
 ## Important operational choices
 
@@ -86,4 +86,4 @@ FastAPI/Pydantic validate required ranges and return HTTP 422 for invalid input;
 - **Offline charts:** Plotly JavaScript is vendored locally under `public/official/plotly.min.js`; no network CDN is required for the official UI. Its MIT license notice is in `public/official/plotly-LICENSE.txt`.
 - **Reproducibility:** a source manifest preserves file hashes, retrieval dates and resource identifiers, while reports preserve empirical counts, software versions, splits and modelling configurations.
 
-Read [METHODOLOGY.md](METHODOLOGY.md) for mathematical meanings and [USER_GUIDE.md](USER_GUIDE.md) for commands.
+Mathematical definitions appear in [methodology](METHODOLOGY.md); the [user guide](USER_GUIDE.md) documents execution and artifact locations.

@@ -1,3 +1,4 @@
-# Local design source retained to preserve original institutional branding.
-# It contains superseded figures and must never be mistaken for the released poster.
-source/
+/source/
+/drafts/
+/working/
+~$*

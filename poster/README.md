@@ -1,51 +1,30 @@
-# GeoValue | TechXhibit 8.0 poster evidence
+# GeoValue research poster and figures
 
-This folder contains poster-ready figures regenerated from the authors' trusted **original fitted model** and their official Allegheny County data. No model retraining is performed by the figure script.
+The poster presents the GeoValue retrospective Allegheny County sale-price study, including its original-model evaluation, observed sale records and numerical spatial sensitivity analysis.
 
-## Running from the repository root
+## Publication assets
 
-```bash
-source "$HOME/.venvs/geovalue/bin/activate"
-uv pip install --link-mode copy matplotlib
-geovalue-official analyze \
-  --data data/official/processed/residential_sales_2013_2025.csv \
-  --model artifacts/official/residential-sale-model.joblib \
-  --training-report reports/official/training-report.json \
-  --grid-size 86 --sigma 1.5 --support-km 4.5 --map-points 1600
-python poster/scripts/generate_original_figures.py --sensitivity
-```
+- [Research poster, PDF](GeoValue_Research_Poster.pdf)
+- [Research poster, editable PowerPoint](GeoValue_Research_Poster.pptx)
+- [Original-model evidence manifest](evidence/original_model_verification.json)
+- [Research figures](figures/)
 
-The `analyze` command regenerates the surface and reliability reports from the trusted original local model. It also **refits a pre-2024 calibration model** only to construct 2024 validation support tiers; the 2025 audit uses the original final model. The figure script itself never fits or changes any model.
+The poster is a presentation of the documented study. It is not an additional model-training experiment. Its scientific figures and results are traceable to the recorded original fitted-model run; the 2024 support-calibration fit is explicitly separate from the 2025 final-model audit.
 
-## Committed versus local files
+## Scientific figures
 
-- Commit: `poster/scripts/`, `poster/figures/` (`.png` and vector `.pdf`), `poster/evidence/original_model_verification.json`, and this README.
-- **Do not commit:** `data/official/raw/`, `data/official/processed/`, the private model under `artifacts/official/`, large numerical intermediate files, or the entire local reports directory.
-- The evidence manifest stores SHA-256 **hashes**, not the private source files or fitted model.
+| File prefix | Source and subject |
+|---|---|
+| `01_observed_2025_sales` | Recorded 2025 transaction prices and density by hexagon |
+| `02_original_model_surface_and_gradient` | Smoothed fixed-feature original-model scenario and partial derivatives |
+| `03_original_2025_actual_vs_predicted` | Original-model prediction pairs on 8,691 held-out 2025 sales |
+| `04_original_2025_price_bracket_errors` | Absolute and proportional errors grouped by recorded price |
+| `05_original_model_spatial_support_errors` | 2024 historical calibration and 2025 original-model support audit |
+| `06_reported_validation_comparisons` | Model selection and geographic-feature ablation |
+| `07_original_model_gradient_sensitivity` | Numerical sensitivity to smoothing bandwidth |
 
-## Figures
+Each figure is provided in a raster PNG and vector PDF format. The plotting definitions are retained in [`scripts/generate_original_figures.py`](scripts/generate_original_figures.py). The JSON evidence record contains the SHA-256 digests of the original processed data, fitted model and analysis reports, together with recomputed 2025 performance and spatial results.
 
-| Figure | Evidence | Meaning |
-|---|---|---|
-| `01_observed_2025_sales` | Official 2025 held-out transactions | Median observed sale price and sale counts per hexagon; a hexagon requires at least 8 sales |
-| `02_original_model_surface_and_gradient` | Original model + `price-surface.npz` | Fixed-feature, Gaussian-smoothed scenario and its numerical gradient; **not observed prices** |
-| `03_original_2025_actual_vs_predicted` | Original model predictions for every 2025 test transaction | All 8,691 points on symmetric-log axes, including any negative predictions |
-| `04_original_2025_price_bracket_errors` | Original model predictions against 2025 actuals | MAE and median absolute percentage error by recorded-price bracket |
-| `05_original_model_spatial_support_errors` | Original-model Task 7 evidence report | 2024 support calibration errors and independent 2025 audit errors |
-| `06_reported_validation_comparisons` | Original 2024 training report | Candidate-model and geography-feature ablation RMSE |
-| `07_original_model_gradient_sensitivity` | Optional original model re-evaluation | Gradient magnitude at sigma 1.0, 1.5, and 2.5; changing smoothing affects magnitudes |
+## Interpretation
 
-## Verification and limitations
-
-`poster/evidence/original_model_verification.json` records the model and data SHA-256 hashes, software versions, and *recomputed* 2025 MAE/RMSE/R². The figure generator **aborts** if these metrics differ materially from the original training report or if the surface/reliability cohort sizes are inconsistent.
-
-Original analysis and poster figures have two distinct types of evidence:
-
-1. Recorded property sale prices and their official 2025 spatial distribution are observations.
-2. Gradient maps describe a numerically smoothed *model scenario* where non-spatial property characteristics, including municipality and ZIP, are held fixed. They are not observed geographical price gradients, prospective appreciation rates, or causal effects.
-
-The official dataset is retrospective and recent property assessment snapshots can include characteristics acquired after historical sale dates. The Spatial Evidence Indicator is descriptive, not a calibrated confidence interval.
-
-### Updating the poster PDF/PPTX
-
-Import the generated PNG or PDF figures into the editable poster, replacing the earlier **independent-model** graphics. Use the numbers from `original_model_verification.json`, not the independently refitted poster package. Do not blindly reuse supplementary figures until their original-model equivalents have been generated and verified.
+Observed transaction maps and model-derived gradients represent different objects. The gradients are numerical derivatives of a smoothed fixed-property scenario, not directly observed appreciation or a causal geographical effect. Local training-data coverage is descriptive and does not establish calibrated individual prediction confidence. Historical assessment fields may postdate older transactions. Full explanations appear in [methodology](../docs/official/METHODOLOGY.md), [experimental results](../docs/official/EXPERIMENT_RESULTS.md) and [feature validity](../docs/official/FEATURE_VALIDITY.md).
